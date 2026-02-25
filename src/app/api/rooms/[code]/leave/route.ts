@@ -3,6 +3,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuthenticatedClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(
   req: NextRequest,
@@ -31,19 +32,19 @@ export async function POST(
     return NextResponse.json({ error: '게임 중에는 나갈 수 없습니다' }, { status: 400 });
   }
 
-  // 참가자 삭제
+  // 호스트가 나가면 방 전체 삭제 (supabaseAdmin으로 RLS 우회)
+  if (room.host_id === user.id) {
+    // CASCADE로 room_players도 자동 삭제됨
+    await supabaseAdmin.from('mahjong_rooms').delete().eq('id', room.id);
+    return NextResponse.json({ disbanded: true });
+  }
+
+  // 일반 참가자 퇴장 (본인 row만 삭제 — RLS OK)
   await supabase
     .from('mahjong_room_players')
     .delete()
     .eq('room_id', room.id)
     .eq('player_id', user.id);
-
-  // 호스트가 나가면 방 삭제
-  if (room.host_id === user.id) {
-    await supabase.from('mahjong_room_players').delete().eq('room_id', room.id);
-    await supabase.from('mahjong_rooms').delete().eq('id', room.id);
-    return NextResponse.json({ disbanded: true });
-  }
 
   return NextResponse.json({ left: true });
 }

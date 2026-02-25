@@ -48,12 +48,12 @@ export async function POST(
   const currentPlayers = players || [];
   const takenSeats = new Set(currentPlayers.map(p => p.seat_index));
 
-  // 빈 자리는 AI로 채우기
+  // 빈 자리는 AI로 채우기 (supabaseAdmin으로 RLS 우회 + UUID 생성)
   for (let i = 0; i < 4; i++) {
     if (!takenSeats.has(i)) {
-      await supabase.from('mahjong_room_players').insert({
+      await supabaseAdmin.from('mahjong_room_players').insert({
         room_id: room.id,
-        player_id: `ai-${room.id}-${i}`,
+        player_id: crypto.randomUUID(),
         seat_index: i,
         is_ai: true,
       });
@@ -79,17 +79,17 @@ export async function POST(
     return NextResponse.json({ error: '게임 상태 저장 실패' }, { status: 500 });
   }
 
-  // 방 상태를 playing으로 변경
-  await supabase
+  // 방 상태를 playing으로 변경 (supabaseAdmin으로)
+  await supabaseAdmin
     .from('mahjong_rooms')
     .update({ status: 'playing', updated_at: new Date().toISOString() })
     .eq('id', room.id);
 
-  // Realtime broadcast로 게임 시작 알림
-  await supabaseAdmin.channel(`room:${room.id}`).send({
+  // Realtime broadcast — 채널명을 code 기반으로 통일
+  await supabaseAdmin.channel(`room:${room.code}`).send({
     type: 'broadcast',
     event: 'room_update',
-    payload: { status: 'playing' },
+    payload: { status: 'playing', roomId: room.id },
   });
 
   return NextResponse.json({ started: true, roomId: room.id });

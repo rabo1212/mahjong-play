@@ -3,6 +3,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuthenticatedClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET(
   req: NextRequest,
@@ -30,10 +31,10 @@ export async function GET(
     .eq('room_id', room.id)
     .order('seat_index');
 
-  // 참가자 닉네임 가져오기
+  // 참가자 닉네임 가져오기 (supabaseAdmin으로 다른 유저 프로필도 읽기)
   const playerIds = (players || []).filter(p => !p.is_ai).map(p => p.player_id);
   const { data: profiles } = playerIds.length > 0
-    ? await supabase
+    ? await supabaseAdmin
         .from('mahjong_profiles')
         .select('id, nickname')
         .in('id', playerIds)

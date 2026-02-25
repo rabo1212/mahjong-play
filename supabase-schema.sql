@@ -46,6 +46,8 @@ CREATE POLICY "방 인증 유저 생성" ON mahjong_rooms
   FOR INSERT WITH CHECK (auth.uid() = host_id);
 CREATE POLICY "방 호스트 수정" ON mahjong_rooms
   FOR UPDATE USING (auth.uid() = host_id);
+CREATE POLICY "방 호스트 삭제" ON mahjong_rooms
+  FOR DELETE USING (auth.uid() = host_id);
 
 -- 3. 방 참가자
 CREATE TABLE IF NOT EXISTS mahjong_room_players (
