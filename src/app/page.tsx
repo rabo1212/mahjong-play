@@ -139,13 +139,23 @@ export default function Home() {
             hover:shadow-gold-glow active:scale-[0.98]"
           onClick={startGame}
         >
-          게임 시작
+          AI 대전
         </button>
       </div>
 
+      {/* 온라인 대전 버튼 */}
+      <button
+        className="w-full max-w-md py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all cursor-pointer
+          bg-action-blue/20 text-action-blue border border-action-blue/30
+          hover:bg-action-blue/30 hover:shadow-[0_0_16px_rgba(74,159,217,0.2)] active:scale-[0.98]"
+        onClick={() => router.push('/lobby')}
+      >
+        온라인 대전
+      </button>
+
       {/* 하단 정보 */}
-      <div className="text-center text-[10px] sm:text-xs text-text-muted space-y-1">
-        <p>중국식 마작 (국표마작, MCR) · AI 연습 모드</p>
+      <div className="mt-4 sm:mt-6 text-center text-[10px] sm:text-xs text-text-muted space-y-1">
+        <p>중국식 마작 (국표마작, MCR) · AI 연습 + 온라인 대전</p>
         <p>4명 플레이 · 144장 · 20가지 역</p>
       </div>
     </main>
