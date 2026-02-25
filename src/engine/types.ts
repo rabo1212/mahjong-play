@@ -108,8 +108,12 @@ export interface ScoringResult {
   meetsMinimum: boolean;   // 8점 이상 여부
 }
 
+/** 마지막 쯔모의 이유 (영상개화 등 판정용) */
+export type DrawReason = 'normal' | 'kan-replacement' | 'flower-replacement';
+
 /** 전체 게임 상태 */
 export interface GameState {
+  gameId: string;                // 게임 고유 ID
   phase: GamePhase;
   roundWind: TileKind;         // 장풍 (41=동)
   turnIndex: number;           // 현재 턴 플레이어 (0~3)
@@ -118,6 +122,7 @@ export interface GameState {
   wallTiles: TileId[];         // 패산 (뒤에서부터 뽑기)
   deadWall: TileId[];          // 왕패 (깡 보충용)
   lastDiscard: { playerId: number; tileId: TileId } | null;
+  lastDrawReason: DrawReason;  // 마지막 쯔모 이유
   pendingActions: PendingAction[];
   winner: number | null;
   winResult: {

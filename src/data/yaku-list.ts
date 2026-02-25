@@ -188,6 +188,33 @@ export const YAKU_LIST: Record<string, Yaku> = {
   },
 
   // === 1점 ===
+  last_tile_draw: {
+    id: 'last_tile_draw',
+    nameKo: '해저로월',
+    nameCn: '海底撈月',
+    nameEn: 'Last Tile Draw',
+    points: 1,
+    description: '패산의 마지막 패로 쯔모 화료',
+    excludes: [],
+  },
+  last_tile_claim: {
+    id: 'last_tile_claim',
+    nameKo: '하저로어',
+    nameCn: '河底撈魚',
+    nameEn: 'Last Tile Claim',
+    points: 1,
+    description: '패산 소진 후 마지막 버림패로 론 화료',
+    excludes: [],
+  },
+  after_a_kong: {
+    id: 'after_a_kong',
+    nameKo: '영상개화',
+    nameCn: '嶺上開花',
+    nameEn: 'After a Kong',
+    points: 1,
+    description: '깡 후 보충 패로 쯔모 화료',
+    excludes: [],
+  },
   self_drawn: {
     id: 'self_drawn',
     nameKo: '자모',

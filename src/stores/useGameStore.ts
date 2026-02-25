@@ -7,14 +7,14 @@ import {
 } from '@/engine/types';
 import {
   createInitialGameState, startGame, doDiscard,
-  executeChi, executePon, executeMinkan, executeAnkan,
+  executeChi, executePon, executeMinkan, executeAnkan, executeKakan,
   declareTsumo, declareRon, advanceTurn,
   checkTsumoWin,
 } from '@/engine/game-manager';
 import { toKinds } from '@/engine/tiles';
-import { getAnkanOptions } from '@/engine/hand';
+import { getAnkanOptions, getKakanOptions } from '@/engine/hand';
 import { canWin } from '@/engine/win-detector';
-import { aiChooseDiscard, aiRespondToActions } from '@/ai/ai-player';
+import { aiChooseDiscard, aiRespondToActions, aiShouldKakan } from '@/ai/ai-player';
 
 interface GameStore extends GameState {
   // 액션
@@ -22,6 +22,7 @@ interface GameStore extends GameState {
   playerDiscard: (tileId: TileId) => void;
   playerAction: (action: ActionType, tiles?: TileId[]) => void;
   playerAnkan: (kanKind: TileKind) => void;
+  playerKakan: (meldIndex: number) => void;
   playerSkip: () => void;
   aiTurn: () => void;
   aiRespondToAction: () => void;
@@ -30,6 +31,7 @@ interface GameStore extends GameState {
   getPlayerActions: () => PendingAction[];
   canPlayerTsumo: () => boolean;
   getPlayerAnkanOptions: () => TileKind[];
+  getPlayerKakanOptions: () => number[];
 }
 
 export const useGameStore = create<GameStore>()((set, get) => ({
@@ -87,6 +89,13 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     set({ ...newState });
   },
 
+  playerKakan: (meldIndex) => {
+    const state = get();
+    if (state.turnIndex !== 0 || state.phase !== 'discard') return;
+    const newState = executeKakan(state, 0, meldIndex);
+    set({ ...newState });
+  },
+
   playerSkip: () => {
     const state = get();
     // 플레이어가 패스 → 플레이어의 pending action 제거
@@ -125,6 +134,16 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       }
     }
 
+    // AI 가깡 체크 (쯔모 후)
+    if (state.phase === 'discard' && player.drawnTile !== null) {
+      const kakanIdx = aiShouldKakan(state, playerIdx);
+      if (kakanIdx !== null) {
+        const newState = executeKakan(state, playerIdx, kakanIdx);
+        set({ ...newState });
+        return;
+      }
+    }
+
     // AI 버리기: 난이도별 전략 사용
     // 치/펑 후에는 drawnTile이 null이지만 버리기 단계임 → 가드 제거
     if (state.phase === 'discard') {
@@ -142,17 +161,26 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const playerActions = state.pendingActions.filter(a => a.playerId === 0);
 
     // 각 AI의 응답 수집
-    let bestAction: PendingAction | null = null;
-    let bestPriority = -1;
+    const responses: PendingAction[] = [];
+    const seenPlayers = new Set<number>();
 
     for (const aiAct of aiActions) {
+      if (seenPlayers.has(aiAct.playerId)) continue;
+      seenPlayers.add(aiAct.playerId);
       const myActions = aiActions.filter(a => a.playerId === aiAct.playerId);
       const response = aiRespondToActions(state, aiAct.playerId, myActions);
-      if (response && response.priority > bestPriority) {
-        bestAction = response;
-        bestPriority = response.priority;
-      }
+      if (response) responses.push(response);
     }
+
+    // 우선순위 정렬: 같은 priority면 방포자 기준 턴 순서가 가까운 쪽
+    const discarderId = state.lastDiscard?.playerId ?? 0;
+    responses.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      const distA = (a.playerId - discarderId + 4) % 4;
+      const distB = (b.playerId - discarderId + 4) % 4;
+      return distA - distB;
+    });
+    const bestAction = responses[0] ?? null;
 
     // AI가 액션을 선택한 경우
     if (bestAction) {
@@ -211,5 +239,15 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       ? [...player.hand, player.drawnTile]
       : player.hand;
     return getAnkanOptions(fullHand);
+  },
+
+  getPlayerKakanOptions: () => {
+    const state = get();
+    if (state.turnIndex !== 0) return [];
+    const player = state.players[0];
+    const fullHand = player.drawnTile
+      ? [...player.hand, player.drawnTile]
+      : player.hand;
+    return getKakanOptions(fullHand, player.melds);
   },
 }));

@@ -192,6 +192,21 @@ export function calculateScore(
 
   // ===== 1점 역 =====
 
+  // 해저로월: 패산 마지막 패로 쯔모
+  if (context.isTsumo && context.isLastWallTile) {
+    detected.push({ id: 'last_tile_draw', count: 1 });
+  }
+
+  // 하저로어: 패산 소진 후 마지막 버림패로 론
+  if (!context.isTsumo && context.isLastWallTile) {
+    detected.push({ id: 'last_tile_claim', count: 1 });
+  }
+
+  // 영상개화: 깡 보충패로 쯔모
+  if (context.isTsumo && context.isKanDraw) {
+    detected.push({ id: 'after_a_kong', count: 1 });
+  }
+
   // 자모(쯔모)
   if (context.isTsumo) {
     detected.push({ id: 'self_drawn', count: 1 });

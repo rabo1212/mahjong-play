@@ -108,6 +108,8 @@ function replaceFlowers(player: PlayerState, wall: TileId[]): void {
     for (const tileId of player.hand) {
       if (isFlower(getTile(tileId).kind)) {
         player.flowers.push(tileId);
+        // 패산 소진 가드
+        if (wall.length === 0) continue;
         // 패산에서 보충
         const replacement = wall.pop();
         if (replacement !== undefined) {

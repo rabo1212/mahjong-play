@@ -5,12 +5,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   createInitialGameState, startGame, doDiscard,
-  executeChi, executePon, executeMinkan, executeAnkan,
+  executeChi, executePon, executeMinkan, executeAnkan, executeKakan,
   declareTsumo, declareRon, advanceTurn, checkTsumoWin,
 } from '@/engine/game-manager';
 import { toKinds, getTile } from '@/engine/tiles';
 import { canWin } from '@/engine/win-detector';
-import { getAnkanOptions } from '@/engine/hand';
+import { getAnkanOptions, getKakanOptions } from '@/engine/hand';
 import { aiChooseDiscard } from '@/ai/ai-player';
 import { GameState, PendingAction } from '@/engine/types';
 
@@ -45,14 +45,23 @@ function simulateFullGame(difficulty: 'easy' | 'normal' | 'hard'): {
         }
       }
 
-      // 암깡 체크
+      // 깡 체크 (암깡 + 가깡)
       if (state.phase === 'discard') {
         const fullHand = player.drawnTile
           ? [...player.hand, player.drawnTile]
           : player.hand;
+
+        // 암깡
         const ankanOpts = getAnkanOptions(fullHand);
         if (ankanOpts.length > 0 && Math.random() < 0.3) {
           state = executeAnkan(state, playerIdx, ankanOpts[0]);
+          continue;
+        }
+
+        // 가깡
+        const kakanOpts = getKakanOptions(fullHand, player.melds);
+        if (kakanOpts.length > 0 && Math.random() < 0.3) {
+          state = executeKakan(state, playerIdx, kakanOpts[0]);
           continue;
         }
       }

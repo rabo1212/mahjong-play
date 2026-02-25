@@ -8,6 +8,7 @@ interface ActionButtonsProps {
   playerActions: PendingAction[];
   canTsumo: boolean;
   ankanOptions: TileKind[];
+  kakanOptions: number[];
   isMyTurn: boolean;
   phase: string;
   onAction: (action: string, tiles?: number[]) => void;
@@ -18,6 +19,7 @@ export default function ActionButtons({
   playerActions,
   canTsumo,
   ankanOptions,
+  kakanOptions,
   isMyTurn,
   phase,
   onAction,
@@ -30,7 +32,7 @@ export default function ActionButtons({
   const chiAction = playerActions.find(a => a.action === 'chi');
 
   const showActionBar = phase === 'action-pending' && playerActions.length > 0;
-  const showTsumoBar = phase === 'discard' && isMyTurn && (canTsumo || ankanOptions.length > 0);
+  const showTsumoBar = phase === 'discard' && isMyTurn && (canTsumo || ankanOptions.length > 0 || kakanOptions.length > 0);
 
   if (!showActionBar && !showTsumoBar) return null;
 
@@ -99,11 +101,20 @@ export default function ActionButtons({
           )}
           {ankanOptions.map(kind => (
             <button
-              key={kind}
+              key={`ankan-${kind}`}
               className="action-btn action-btn-kan"
               onClick={() => onAction('ankan', [kind])}
             >
               암깡 <span className="font-tile text-[17px]">暗杠</span>
+            </button>
+          ))}
+          {kakanOptions.map(idx => (
+            <button
+              key={`kakan-${idx}`}
+              className="action-btn action-btn-kan"
+              onClick={() => onAction('kakan', [idx])}
+            >
+              가깡 <span className="font-tile text-[17px]">加杠</span>
             </button>
           ))}
         </>

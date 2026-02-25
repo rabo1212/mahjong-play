@@ -1,6 +1,6 @@
 import {
   GameState, GamePhase, TileId, TileKind,
-  Meld, Difficulty
+  Meld, Difficulty, DrawReason,
 } from './types';
 import { getTile, toKinds, sortByKind, isFlower } from './tiles';
 import { dealInitialHands, drawFromWall, drawFromDeadWall } from './wall';
@@ -9,9 +9,19 @@ import { collectPendingActions } from './action-resolver';
 import { canWin } from './win-detector';
 import { calculateScore } from './scoring';
 
+/** 간단한 UUID 생성 (crypto.randomUUID 폴백) */
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // 폴백: 타임스탬프 + 랜덤
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /** 초기 게임 상태 생성 */
 export function createInitialGameState(difficulty: Difficulty, beginnerMode: boolean): GameState {
   return {
+    gameId: generateId(),
     phase: 'idle',
     roundWind: 41, // 동
     turnIndex: 0,
@@ -20,6 +30,7 @@ export function createInitialGameState(difficulty: Difficulty, beginnerMode: boo
     wallTiles: [],
     deadWall: [],
     lastDiscard: null,
+    lastDrawReason: 'normal',
     pendingActions: [],
     winner: null,
     winResult: null,
@@ -48,7 +59,7 @@ export function startGame(state: GameState): GameState {
 }
 
 /** 쯔모(패산에서 1장 뽑기) */
-export function doDraw(state: GameState): GameState {
+export function doDraw(state: GameState, reason: DrawReason = 'normal'): GameState {
   const playerIdx = state.turnIndex;
   const drawResult = drawFromWall(state.wallTiles);
 
@@ -66,9 +77,14 @@ export function doDraw(state: GameState): GameState {
     player.flowers = [...player.flowers, tile];
     newPlayers[playerIdx] = player;
 
+    // 패산 소진 가드 (꽃패 보충 시에도 체크)
+    if (wall.length === 0) {
+      return { ...state, phase: 'game-over' as GamePhase, players: newPlayers, wallTiles: wall };
+    }
+
     // 꽃패 보충 (패산에서 다시 뽑기)
     const newState = { ...state, players: newPlayers, wallTiles: wall };
-    return doDraw(newState); // 재귀 (꽃패가 또 나올 수 있음)
+    return doDraw(newState, 'flower-replacement'); // 재귀 (꽃패가 또 나올 수 있음)
   }
 
   player.drawnTile = tile;
@@ -79,6 +95,7 @@ export function doDraw(state: GameState): GameState {
     phase: 'discard' as GamePhase,
     players: newPlayers,
     wallTiles: wall,
+    lastDrawReason: reason,
   };
 }
 
@@ -101,7 +118,7 @@ export function checkTsumoWin(state: GameState): boolean {
       isTsumo: true,
       lastTile: getTile(player.drawnTile).kind,
       isLastWallTile: state.wallTiles.length === 0,
-      isKanDraw: false,
+      isKanDraw: state.lastDrawReason === 'kan-replacement',
       flowerCount: player.flowers.length,
       melds: player.melds,
       isMenzen,
@@ -298,6 +315,23 @@ export function executeMinkan(state: GameState, playerId: number): GameState {
 
   const { tile: kanDraw, deadWall: newDeadWall } = deadDrawResult;
   const p = { ...newPlayers[playerId] };
+
+  // 깡 보충 패가 꽃패인 경우 처리
+  if (isFlower(getTile(kanDraw).kind)) {
+    p.flowers = [...p.flowers, kanDraw];
+    newPlayers[playerId] = p;
+    // 패산에서 다시 뽑기
+    const newState: GameState = {
+      ...state,
+      turnIndex: playerId,
+      players: newPlayers,
+      deadWall: newDeadWall,
+      pendingActions: [],
+      lastDiscard: null,
+    };
+    return doDraw(newState, 'kan-replacement');
+  }
+
   p.drawnTile = kanDraw;
   newPlayers[playerId] = p;
 
@@ -309,6 +343,7 @@ export function executeMinkan(state: GameState, playerId: number): GameState {
     deadWall: newDeadWall,
     pendingActions: [],
     lastDiscard: null,
+    lastDrawReason: 'kan-replacement',
   };
 }
 
@@ -344,6 +379,21 @@ export function executeAnkan(state: GameState, playerId: number, kanKind: TileKi
 
   const { tile: kanDraw, deadWall: newDeadWall } = deadDrawResult;
   const p = { ...newPlayers[playerId] };
+
+  // 깡 보충 패가 꽃패인 경우 처리
+  if (isFlower(getTile(kanDraw).kind)) {
+    p.flowers = [...p.flowers, kanDraw];
+    newPlayers[playerId] = p;
+    const newState: GameState = {
+      ...state,
+      turnIndex: playerId,
+      players: newPlayers,
+      deadWall: newDeadWall,
+      pendingActions: [],
+    };
+    return doDraw(newState, 'kan-replacement');
+  }
+
   p.drawnTile = kanDraw;
   newPlayers[playerId] = p;
 
@@ -354,6 +404,77 @@ export function executeAnkan(state: GameState, playerId: number, kanKind: TileKi
     players: newPlayers,
     deadWall: newDeadWall,
     pendingActions: [],
+    lastDrawReason: 'kan-replacement',
+  };
+}
+
+/** 가깡(加杠) 실행 — 이미 펑한 세트에 4번째 패 추가 */
+export function executeKakan(state: GameState, playerId: number, meldIndex: number): GameState {
+  const newPlayers = [...state.players];
+  const player = { ...newPlayers[playerId] };
+
+  const targetMeld = player.melds[meldIndex];
+  if (!targetMeld || targetMeld.type !== 'pon') return state;
+
+  const ponKind = targetMeld.tileKinds[0];
+
+  // 손패 + drawnTile에서 해당 kind 1장 찾기
+  let fullHand = [...player.hand];
+  if (player.drawnTile !== null) fullHand.push(player.drawnTile);
+
+  const kakanTile = fullHand.find(id => getTile(id).kind === ponKind);
+  if (kakanTile === undefined) return state;
+
+  // 손패에서 제거
+  fullHand = removeTilesFromHand(fullHand, [kakanTile]);
+  player.hand = sortByKind(fullHand);
+  player.drawnTile = null;
+
+  // 펑 → 가깡으로 업그레이드
+  const newMelds = [...player.melds];
+  newMelds[meldIndex] = {
+    ...targetMeld,
+    type: 'kakan',
+    tileIds: [...targetMeld.tileIds, kakanTile],
+    tileKinds: [ponKind, ponKind, ponKind, ponKind],
+  };
+  player.melds = newMelds;
+  newPlayers[playerId] = player;
+
+  // 왕패에서 1장 보충
+  const deadDrawResult = drawFromDeadWall(state.deadWall);
+  if (!deadDrawResult) {
+    return { ...state, phase: 'game-over' as GamePhase, players: newPlayers };
+  }
+
+  const { tile: kanDraw, deadWall: newDeadWall } = deadDrawResult;
+  const p = { ...newPlayers[playerId] };
+
+  // 깡 보충 패가 꽃패인 경우 처리
+  if (isFlower(getTile(kanDraw).kind)) {
+    p.flowers = [...p.flowers, kanDraw];
+    newPlayers[playerId] = p;
+    const newState: GameState = {
+      ...state,
+      turnIndex: playerId,
+      players: newPlayers,
+      deadWall: newDeadWall,
+      pendingActions: [],
+    };
+    return doDraw(newState, 'kan-replacement');
+  }
+
+  p.drawnTile = kanDraw;
+  newPlayers[playerId] = p;
+
+  return {
+    ...state,
+    phase: 'discard' as GamePhase,
+    turnIndex: playerId,
+    players: newPlayers,
+    deadWall: newDeadWall,
+    pendingActions: [],
+    lastDrawReason: 'kan-replacement',
   };
 }
 
@@ -375,7 +496,7 @@ export function declareRon(state: GameState, winnerId: number): GameState {
     seatWind: winner.seatWind,
     isTsumo: false,
     lastTile: discardKind,
-    isLastWallTile: false,
+    isLastWallTile: state.wallTiles.length === 0,
     isKanDraw: false,
     flowerCount: winner.flowers.length,
     melds: winner.melds,
@@ -422,7 +543,7 @@ export function declareTsumo(state: GameState, playerId: number): GameState {
     isTsumo: true,
     lastTile: drawnKind,
     isLastWallTile: state.wallTiles.length === 0,
-    isKanDraw: false,
+    isKanDraw: state.lastDrawReason === 'kan-replacement',
     flowerCount: player.flowers.length,
     melds: player.melds,
     isMenzen,

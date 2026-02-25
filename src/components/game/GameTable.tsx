@@ -53,7 +53,9 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   const getPlayerActions = useGameStore(s => s.getPlayerActions);
   const canPlayerTsumo = useGameStore(s => s.canPlayerTsumo);
   const getPlayerAnkanOptions = useGameStore(s => s.getPlayerAnkanOptions);
+  const getPlayerKakanOptions = useGameStore(s => s.getPlayerKakanOptions);
   const playerAnkan = useGameStore(s => s.playerAnkan);
+  const playerKakan = useGameStore(s => s.playerKakan);
 
   // 게임 루프
   useGameLoop();
@@ -158,9 +160,14 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
       setSelectedTile(null);
       return;
     }
+    if (action === 'kakan' && tiles) {
+      playerKakan(tiles[0]);
+      setSelectedTile(null);
+      return;
+    }
     playerAction(action as ActionType, tiles);
     setSelectedTile(null);
-  }, [playerAction, playerAnkan, soundEnabled, handleInteraction]);
+  }, [playerAction, playerAnkan, playerKakan, soundEnabled, handleInteraction]);
 
   const handleSkip = useCallback(() => {
     handleInteraction();
@@ -182,6 +189,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   const playerActions = getPlayerActions();
   const canTsumo = canPlayerTsumo();
   const ankanOptions = getPlayerAnkanOptions();
+  const kakanOptions = getPlayerKakanOptions();
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-base select-none" onClick={handleInteraction}>
@@ -361,6 +369,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
             playerActions={playerActions}
             canTsumo={canTsumo}
             ankanOptions={ankanOptions}
+            kakanOptions={kakanOptions}
             isMyTurn={isMyTurn}
             phase={phase}
             onAction={handleAction}

@@ -123,6 +123,20 @@ function shantenThirteenOrphans(counts: number[]): number {
   return 13 - have - (hasPair ? 1 : 0);
 }
 
+// 향청수 메모이제이션 캐시
+const shantenCache = new Map<string, number>();
+
+/** 캐시 키 생성: kinds를 정렬해서 문자열화 */
+function makeCacheKey(kinds: TileKind[], meldCount: number): string {
+  const sorted = [...kinds].sort((a, b) => a - b);
+  return `${sorted.join(',')}_${meldCount}`;
+}
+
+/** 캐시 초기화 (매 AI 턴마다 호출) */
+export function clearShantenCache(): void {
+  shantenCache.clear();
+}
+
 /**
  * 향청수 계산 (메인)
  * @param kinds 손패 kind 배열 (부로 제외, 13장 or 14장)
@@ -130,6 +144,10 @@ function shantenThirteenOrphans(counts: number[]): number {
  * @returns 향청수 (-1=화료, 0=텐파이, 1=이향청, ...)
  */
 export function calculateShanten(kinds: TileKind[], meldCount: number = 0): number {
+  const key = makeCacheKey(kinds, meldCount);
+  const cached = shantenCache.get(key);
+  if (cached !== undefined) return cached;
+
   const counts = buildKindCounts(kinds);
 
   let best = shantenStandard(counts, meldCount);
@@ -139,6 +157,10 @@ export function calculateShanten(kinds: TileKind[], meldCount: number = 0): numb
     best = Math.min(best, shantenSevenPairs(counts));
     best = Math.min(best, shantenThirteenOrphans(counts));
   }
+
+  // 캐시 크기 제한 (메모리 보호)
+  if (shantenCache.size > 10000) shantenCache.clear();
+  shantenCache.set(key, best);
 
   return best;
 }

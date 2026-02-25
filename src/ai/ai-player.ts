@@ -1,6 +1,6 @@
 import { TileId, TileKind, GameState, PendingAction } from '@/engine/types';
 import { getTile, toKinds } from '@/engine/tiles';
-import { calculateShanten, evaluateDiscards, countEffectiveTiles } from './shanten';
+import { calculateShanten, evaluateDiscards, countEffectiveTiles, clearShantenCache } from './shanten';
 
 /**
  * AI 플레이어
@@ -11,6 +11,7 @@ import { calculateShanten, evaluateDiscards, countEffectiveTiles } from './shant
 
 /** AI가 버릴 패 선택 */
 export function aiChooseDiscard(state: GameState, playerIdx: number): TileId {
+  clearShantenCache(); // 매 턴 캐시 초기화 (이전 턴 상태 무효화)
   const player = state.players[playerIdx];
   const allTileIds = player.drawnTile !== null
     ? [...player.hand, player.drawnTile]
@@ -218,6 +219,30 @@ function hardRespondToAction(
     if (newShanten < currentShanten && newShanten <= 0) return chiAction;
   }
 
+  return null;
+}
+
+/** AI 가깡 판단 — 펑한 면자 + 손패에 4번째 패가 있으면 가깡 */
+export function aiShouldKakan(
+  state: GameState,
+  playerIdx: number
+): number | null {
+  const player = state.players[playerIdx];
+  const fullHand = player.drawnTile !== null
+    ? [...player.hand, player.drawnTile]
+    : [...player.hand];
+
+  for (let i = 0; i < player.melds.length; i++) {
+    const meld = player.melds[i];
+    if (meld.type !== 'pon') continue;
+    const ponKind = meld.tileKinds[0];
+    if (fullHand.some(id => getTile(id).kind === ponKind)) {
+      // Easy: 가깡 안 함, Normal: 50%, Hard: 항상
+      if (state.difficulty === 'easy') return null;
+      if (state.difficulty === 'normal' && Math.random() > 0.5) continue;
+      return i;
+    }
+  }
   return null;
 }
 
