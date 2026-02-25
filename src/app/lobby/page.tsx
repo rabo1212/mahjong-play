@@ -45,7 +45,7 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 
 export default function LobbyPage() {
   const router = useRouter();
-  const { nickname, isAuthenticated, isLoading, signInAnonymous, restoreSession } = useAuthStore();
+  const { nickname, isAuthenticated, isLoading, signInAnonymous, restoreSession, changeNickname, signOut } = useAuthStore();
 
   const [nicknameInput, setNicknameInput] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -61,6 +61,11 @@ export default function LobbyPage() {
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [joiningRoomCode, setJoiningRoomCode] = useState<string | null>(null);
+
+  // 닉네임 변경
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [newNickname, setNewNickname] = useState('');
+  const [nickChanging, setNickChanging] = useState(false);
 
   // 프로필 통계
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
@@ -119,6 +124,28 @@ export default function LobbyPage() {
   const handleLogin = async () => {
     const name = nicknameInput.trim() || '플레이어';
     await signInAnonymous(name);
+  };
+
+  // 닉네임 변경
+  const handleChangeNickname = async () => {
+    const name = newNickname.trim();
+    if (!name || name === nickname) {
+      setEditingNickname(false);
+      return;
+    }
+    setNickChanging(true);
+    const ok = await changeNickname(name);
+    setNickChanging(false);
+    if (ok) {
+      setEditingNickname(false);
+    } else {
+      setError('닉네임 변경에 실패했습니다');
+    }
+  };
+
+  // 로그아웃
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   // 방 생성
@@ -253,9 +280,56 @@ export default function LobbyPage() {
       <p className="text-sm text-text-secondary mb-8">온라인 대전</p>
 
       {/* 유저 정보 */}
-      <div className="mb-4 text-center">
-        <span className="text-xs text-text-muted">접속 중: </span>
-        <span className="text-sm text-gold font-semibold">{nickname}</span>
+      <div className="mb-4 flex items-center justify-center gap-2">
+        {editingNickname ? (
+          <>
+            <input
+              type="text"
+              maxLength={10}
+              value={newNickname}
+              onChange={(e) => setNewNickname(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleChangeNickname();
+                if (e.key === 'Escape') setEditingNickname(false);
+              }}
+              autoFocus
+              className="px-2 py-1 rounded bg-panel-light border border-gold/30
+                text-sm text-gold font-semibold text-center w-28
+                focus:outline-none focus:border-gold/60 transition-colors"
+            />
+            <button
+              onClick={handleChangeNickname}
+              disabled={nickChanging}
+              className="text-[10px] text-gold hover:text-gold-light transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {nickChanging ? '...' : '확인'}
+            </button>
+            <button
+              onClick={() => setEditingNickname(false)}
+              className="text-[10px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              취소
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-xs text-text-muted">접속 중: </span>
+            <span className="text-sm text-gold font-semibold">{nickname}</span>
+            <button
+              onClick={() => { setNewNickname(nickname); setEditingNickname(true); }}
+              className="text-[10px] text-text-muted hover:text-gold transition-colors cursor-pointer"
+            >
+              변경
+            </button>
+            <span className="text-white/10">|</span>
+            <button
+              onClick={handleSignOut}
+              className="text-[10px] text-text-muted hover:text-action-danger transition-colors cursor-pointer"
+            >
+              로그아웃
+            </button>
+          </>
+        )}
       </div>
 
       {/* 프로필 통계 카드 */}

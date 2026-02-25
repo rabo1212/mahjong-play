@@ -10,6 +10,7 @@ interface OnlineGameOverModalProps {
   seatIndex: number;
   onRematch: () => void;
   onBackToMenu: () => void;
+  onBackToHome?: () => void;
   rematchLoading: boolean;
 }
 
@@ -20,6 +21,7 @@ export default function OnlineGameOverModal({
   seatIndex,
   onRematch,
   onBackToMenu,
+  onBackToHome,
   rematchLoading,
 }: OnlineGameOverModalProps) {
   const winner = gameState.winner;
@@ -248,6 +250,16 @@ export default function OnlineGameOverModal({
           >
             로비로
           </button>
+          {onBackToHome && (
+            <button
+              onClick={onBackToHome}
+              className="px-5 py-2.5 rounded-lg font-semibold text-sm cursor-pointer
+                bg-panel-light text-text-muted border border-white/5
+                hover:border-white/10 transition-colors"
+            >
+              메인으로
+            </button>
+          )}
         </div>
       </div>
     </div>

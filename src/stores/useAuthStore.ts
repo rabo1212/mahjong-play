@@ -14,6 +14,8 @@ interface AuthStore {
   signInAnonymous: (nickname: string) => Promise<void>;
   /** 기존 세션 복원 */
   restoreSession: () => Promise<void>;
+  /** 닉네임 변경 */
+  changeNickname: (newNick: string) => Promise<boolean>;
   /** 로그아웃 */
   signOut: () => Promise<void>;
 }
@@ -73,6 +75,18 @@ export const useAuthStore = create<AuthStore>()(
         } catch {
           set({ isLoading: false });
         }
+      },
+
+      changeNickname: async (newNick: string) => {
+        const { userId } = get();
+        if (!userId) return false;
+        const { error } = await supabase
+          .from('mahjong_profiles')
+          .update({ nickname: newNick })
+          .eq('id', userId);
+        if (error) return false;
+        set({ nickname: newNick });
+        return true;
       },
 
       signOut: async () => {
