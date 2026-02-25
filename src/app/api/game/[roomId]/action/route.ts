@@ -13,7 +13,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   doDiscard, advanceTurn,
   executeChi, executePon, executeMinkan, executeAnkan, executeKakan,
-  declareRon, declareTsumo, skipAction,
+  declareRon, declareTsumo,
   checkTsumoWin,
 } from '@/engine/game-manager';
 import { serializeGameState } from '@/engine/dto';
@@ -193,14 +193,15 @@ function applyAction(state: GameState, seatIndex: number, action: GameAction): G
   switch (action.type) {
     case 'skip': {
       if (!state.pendingActions.some(a => a.playerId === seatIndex)) return state;
-      // 스킵: pending에서 제거 + 이미 수집된 응답에서도 제거 (혹시 있으면)
-      const afterSkip = skipAction(state, seatIndex);
-      const cleaned = {
-        ...afterSkip,
-        collectedResponses: (afterSkip.collectedResponses || [])
+      // 엔진의 skipAction을 쓰지 않음 (advanceTurn 직접 호출해서 수집된 응답 날림 방지)
+      // 대신 수동으로 pending에서 제거 후 tryResolveCollected에 위임
+      const remaining = state.pendingActions.filter(a => a.playerId !== seatIndex);
+      const cleaned: GameState = {
+        ...state,
+        pendingActions: remaining,
+        collectedResponses: (state.collectedResponses || [])
           .filter(r => r.playerId !== seatIndex),
       };
-      // 모든 인간 pending이 해결되었는지 확인 → resolve 시도
       return tryResolveCollected(cleaned);
     }
     case 'chi': {
@@ -410,26 +411,29 @@ function processAIOnlyPending(state: GameState): GameState | null {
     if (decision) aiDecisions.push(decision);
   }
 
+  // collectedResponses 정리
+  const cleanState: GameState = { ...state, collectedResponses: [] };
+
   if (aiDecisions.length === 0) {
-    return advanceTurn({ ...state, pendingActions: [] });
+    return advanceTurn({ ...cleanState, pendingActions: [] });
   }
 
   const topAction = resolveTopAction(aiDecisions, state.lastDiscard.playerId);
   if (!topAction) {
-    return advanceTurn({ ...state, pendingActions: [] });
+    return advanceTurn({ ...cleanState, pendingActions: [] });
   }
 
   switch (topAction.action) {
     case 'win':
-      return declareRon(state, topAction.playerId);
+      return declareRon(cleanState, topAction.playerId);
     case 'kan':
-      return executeMinkan(state, topAction.playerId);
+      return executeMinkan(cleanState, topAction.playerId);
     case 'pon':
-      return executePon(state, topAction.playerId);
+      return executePon(cleanState, topAction.playerId);
     case 'chi':
-      return executeChi(state, topAction.playerId, topAction.tiles);
+      return executeChi(cleanState, topAction.playerId, topAction.tiles);
     default:
-      return advanceTurn({ ...state, pendingActions: [] });
+      return advanceTurn({ ...cleanState, pendingActions: [] });
   }
 }
 

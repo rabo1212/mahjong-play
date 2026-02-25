@@ -50,6 +50,33 @@ export async function POST(
   );
   const gameState = startGame(initial);
 
+  // DB 참가자 정보로 isAI + 이름 패치
+  const { data: allPlayers } = await supabaseAdmin
+    .from('mahjong_room_players')
+    .select('seat_index, is_ai, player_id')
+    .eq('room_id', room.id);
+
+  if (allPlayers) {
+    const humanIds = allPlayers.filter(p => !p.is_ai).map(p => p.player_id);
+    const { data: profiles } = humanIds.length > 0
+      ? await supabaseAdmin
+          .from('mahjong_profiles')
+          .select('id, nickname')
+          .in('id', humanIds)
+      : { data: [] };
+
+    const windNames = ['東', '南', '西', '北'];
+    for (const p of allPlayers) {
+      gameState.players[p.seat_index].isAI = p.is_ai;
+      if (!p.is_ai) {
+        const profile = profiles?.find(pr => pr.id === p.player_id);
+        gameState.players[p.seat_index].name = profile?.nickname || 'Player';
+      } else {
+        gameState.players[p.seat_index].name = `AI (${windNames[p.seat_index]})`;
+      }
+    }
+  }
+
   // game_states 덮어쓰기
   const { error: stateError } = await supabaseAdmin
     .from('mahjong_game_states')

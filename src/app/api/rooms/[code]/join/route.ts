@@ -62,18 +62,41 @@ export async function POST(
     if (!takenSeats.has(i)) { seatIndex = i; break; }
   }
 
-  const { error: joinError } = await supabase
-    .from('mahjong_room_players')
-    .insert({
-      room_id: room.id,
-      player_id: user.id,
-      seat_index: seatIndex,
-      is_ai: false,
-    });
+  // 좌석 충돌 시 재시도 (동시 참가 대비)
+  let assignedSeat = seatIndex;
+  let joinError = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { error } = await supabase
+      .from('mahjong_room_players')
+      .insert({
+        room_id: room.id,
+        player_id: user.id,
+        seat_index: assignedSeat,
+        is_ai: false,
+      });
 
-  if (joinError) {
-    return NextResponse.json({ error: '참가 실패: ' + joinError.message }, { status: 500 });
+    if (!error) {
+      joinError = null;
+      break;
+    }
+    joinError = error;
+    // 좌석 충돌 → 다시 빈 좌석 조회
+    const { data: retryPlayers } = await supabase
+      .from('mahjong_room_players')
+      .select('seat_index')
+      .eq('room_id', room.id);
+    const retryTaken = new Set((retryPlayers || []).map(p => p.seat_index));
+    if (retryTaken.size >= 4) {
+      return NextResponse.json({ error: '방이 가득 찼습니다' }, { status: 400 });
+    }
+    for (let i = 0; i < 4; i++) {
+      if (!retryTaken.has(i)) { assignedSeat = i; break; }
+    }
   }
 
-  return NextResponse.json({ room: { id: room.id, code: room.code }, seatIndex });
+  if (joinError) {
+    return NextResponse.json({ error: '참가 실패' }, { status: 500 });
+  }
+
+  return NextResponse.json({ room: { id: room.id, code: room.code }, seatIndex: assignedSeat });
 }

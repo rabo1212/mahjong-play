@@ -48,8 +48,11 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
       })
       .on('broadcast', { event: 'room_update' }, (payload) => {
         const status = payload.payload?.status;
-        if (status === 'finished' || status === 'rematch') {
-          // 리매치 시 새 게임 상태 fetch
+        if (status === 'finished') {
+          store.fetchState();
+        } else if (status === 'rematch') {
+          // 리매치: version을 리셋해야 새 게임(version=0)을 수신 가능
+          useOnlineGameStore.setState({ version: -1 });
           store.fetchState();
         }
       })

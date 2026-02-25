@@ -3,6 +3,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuthenticatedClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { generateRoomCode } from '@/lib/room-code';
 
 const VALID_DIFFICULTIES = ['easy', 'normal', 'hard'];
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   let codeFound = false;
   for (let i = 0; i < 5; i++) {
     code = generateRoomCode();
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('mahjong_rooms')
       .select('id')
       .eq('code', code)
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (roomError) {
-    return NextResponse.json({ error: '방 생성 실패: ' + roomError.message }, { status: 500 });
+    return NextResponse.json({ error: '방 생성 실패' }, { status: 500 });
   }
 
   // 호스트를 seat 0에 자동 참가
