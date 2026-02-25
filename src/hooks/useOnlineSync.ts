@@ -47,7 +47,9 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
         }
       })
       .on('broadcast', { event: 'room_update' }, (payload) => {
-        if (payload.payload?.status === 'finished') {
+        const status = payload.payload?.status;
+        if (status === 'finished' || status === 'rematch') {
+          // 리매치 시 새 게임 상태 fetch
           store.fetchState();
         }
       })

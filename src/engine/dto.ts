@@ -41,6 +41,8 @@ export interface GameStateDTO {
   myPendingActions: { action: string; tiles: number[] }[];
   /** 쯔모 가능 여부 (서버에서 판정) */
   canTsumo: boolean;
+  /** 내가 이미 응답 수집 완료했는지 (다른 플레이어 대기 중) */
+  myResponseCollected: boolean;
 }
 
 /** GameState → DTO (서버 → 클라이언트) */
@@ -93,5 +95,7 @@ export function serializeGameState(state: GameState, forPlayerId?: number): Game
       && state.phase === 'discard'
       && state.turnIndex === forPlayerId
       && checkTsumoWin(state),
+    myResponseCollected: forPlayerId !== undefined
+      && (state.collectedResponses || []).some(r => r.playerId === forPlayerId),
   };
 }

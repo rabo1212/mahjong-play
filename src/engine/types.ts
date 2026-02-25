@@ -124,6 +124,8 @@ export interface GameState {
   lastDiscard: { playerId: number; tileId: TileId } | null;
   lastDrawReason: DrawReason;  // 마지막 쯔모 이유
   pendingActions: PendingAction[];
+  /** 온라인 대국: 인간 플레이어 응답 수집 (전원 응답 후 우선순위 resolve) */
+  collectedResponses?: { playerId: number; action: PendingAction }[];
   winner: number | null;
   winResult: {
     decomposition: WinDecomposition;

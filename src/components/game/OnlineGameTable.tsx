@@ -163,6 +163,30 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     setSelectedTile(null);
   }, [actionPending, sendAction, soundEnabled, handleInteraction]);
 
+  // 다시하기
+  const [rematchLoading, setRematchLoading] = useState(false);
+  const handleRematch = useCallback(async () => {
+    if (rematchLoading) return;
+    setRematchLoading(true);
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/rooms/${roomCode}/rematch`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || '다시하기 실패');
+      }
+      // 성공 시 Realtime broadcast가 새 게임 상태를 보내줌
+    } catch {
+      alert('다시하기 실패');
+    } finally {
+      setRematchLoading(false);
+    }
+  }, [roomCode, rematchLoading]);
+
   // 로딩 중
   if (isLoading || !gameState || seatIndex === null) {
     return (
@@ -198,6 +222,9 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
 
   // 쯔모 가능 여부 (서버에서 판정)
   const canTsumo = gameState.canTsumo ?? false;
+
+  // 내 응답이 이미 수집됨 (다른 플레이어 대기 중)
+  const myResponseCollected = gameState.myResponseCollected ?? false;
 
   // 암깡/가깡은 서버에서 허용 여부를 보내지 않으므로 클라이언트에서 계산
   const ankanOptions: TileKind[] = [];
@@ -396,22 +423,29 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
             />
           </div>
 
-          {/* 액션 버튼 */}
-          <ActionButtons
-            playerActions={playerActions}
-            canTsumo={canTsumo}
-            ankanOptions={ankanOptions}
-            kakanOptions={kakanOptions}
-            isMyTurn={isMyTurn}
-            phase={gameState.phase}
-            onAction={handleAction}
-            onSkip={handleSkip}
-          />
+          {/* 액션 버튼 (응답 수집 완료 시 숨김) */}
+          {!myResponseCollected && (
+            <ActionButtons
+              playerActions={playerActions}
+              canTsumo={canTsumo}
+              ankanOptions={ankanOptions}
+              kakanOptions={kakanOptions}
+              isMyTurn={isMyTurn}
+              phase={gameState.phase}
+              onAction={handleAction}
+              onSkip={handleSkip}
+            />
+          )}
 
           {/* 안내 메시지 */}
           <div className="text-center text-[10px] sm:text-xs text-text-muted pb-1 sm:pb-2">
-            {gameState.phase === 'discard' && isMyTurn && !actionPending && '패를 클릭해서 선택 → 다시 클릭하면 버리기'}
-            {gameState.phase === 'action-pending' && playerActions.length > 0 && '액션을 선택하세요'}
+            {myResponseCollected && (
+              <span className="inline-flex items-center gap-1.5 text-gold animate-pulse">
+                다른 플레이어 응답 대기 중...
+              </span>
+            )}
+            {!myResponseCollected && gameState.phase === 'discard' && isMyTurn && !actionPending && '패를 클릭해서 선택 → 다시 클릭하면 버리기'}
+            {!myResponseCollected && gameState.phase === 'action-pending' && playerActions.length > 0 && '액션을 선택하세요'}
             {gameState.phase === 'discard' && !isMyTurn && (
               <span className="inline-flex items-center gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
@@ -443,6 +477,15 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
               </div>
             )}
             <div className="flex gap-3 justify-center">
+              <button
+                onClick={handleRematch}
+                disabled={rematchLoading}
+                className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer
+                  bg-gold/20 text-gold border border-gold/30
+                  hover:bg-gold/30 transition-colors disabled:opacity-50"
+              >
+                {rematchLoading ? '준비 중...' : '다시하기'}
+              </button>
               <button
                 onClick={onBackToMenu}
                 className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer

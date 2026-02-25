@@ -2,6 +2,10 @@
  * POST /api/game/[roomId]/action — 통합 게임 액션
  * 클라이언트 → 서버 : 액션 전달
  * 서버: 엔진 호출 → DB 저장 → Realtime broadcast
+ *
+ * action-pending 시 응답 수집 모드:
+ * - 인간 플레이어 응답을 collectedResponses에 저장
+ * - 전원 응답 완료 시 AI 응답 추가 → 우선순위로 resolve
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuthenticatedClient } from '@/lib/supabase/server';
@@ -95,6 +99,11 @@ export async function POST(
   // AI 턴 자동 처리 (연쇄)
   state = processAITurns(state);
 
+  // 게임 오버 시 전적 반영
+  if (state.phase === 'game-over' && originalState.phase !== 'game-over') {
+    await handleGameOver(roomId, state);
+  }
+
   // DB 저장 — CAS로 0행 매치 감지
   const newVersion = gameRow.version + 1;
   const { data: updateResult, error: updateError } = await supabaseAdmin
@@ -149,29 +158,18 @@ export async function POST(
   return NextResponse.json({ state: dto, version: newVersion });
 }
 
+// ============================================================
+// 액션 적용
+// ============================================================
+
 /** 플레이어 액션을 게임 상태에 적용 (무효 시 원래 state 참조 그대로 반환) */
 function applyAction(state: GameState, seatIndex: number, action: GameAction): GameState {
+  // discard 단계 액션 (즉시 실행)
   switch (action.type) {
     case 'discard': {
       if (state.phase !== 'discard' || state.turnIndex !== seatIndex) return state;
       if (typeof action.tileId !== 'number') return state;
       return doDiscard(state, action.tileId);
-    }
-    case 'chi': {
-      if (state.phase !== 'action-pending') return state;
-      if (!hasPendingAction(state, seatIndex, 'chi')) return state;
-      if (!Array.isArray(action.tileIds) || action.tileIds.length !== 2) return state;
-      return executeChi(state, seatIndex, action.tileIds);
-    }
-    case 'pon': {
-      if (state.phase !== 'action-pending') return state;
-      if (!hasPendingAction(state, seatIndex, 'pon')) return state;
-      return executePon(state, seatIndex);
-    }
-    case 'kan': {
-      if (state.phase !== 'action-pending') return state;
-      if (!hasPendingAction(state, seatIndex, 'kan')) return state;
-      return executeMinkan(state, seatIndex);
     }
     case 'ankan': {
       if (state.phase !== 'discard' || state.turnIndex !== seatIndex) return state;
@@ -187,18 +185,130 @@ function applyAction(state: GameState, seatIndex: number, action: GameAction): G
       if (state.phase !== 'discard' || state.turnIndex !== seatIndex) return state;
       return declareTsumo(state, seatIndex);
     }
-    case 'ron': {
-      if (state.phase !== 'action-pending') return state;
-      if (!hasPendingAction(state, seatIndex, 'win')) return state;
-      return declareRon(state, seatIndex);
-    }
+  }
+
+  // action-pending 단계: 응답 수집 모드
+  if (state.phase !== 'action-pending') return state;
+
+  switch (action.type) {
     case 'skip': {
-      if (state.phase !== 'action-pending') return state;
       if (!state.pendingActions.some(a => a.playerId === seatIndex)) return state;
-      return skipAction(state, seatIndex);
+      // 스킵: pending에서 제거 + 이미 수집된 응답에서도 제거 (혹시 있으면)
+      const afterSkip = skipAction(state, seatIndex);
+      const cleaned = {
+        ...afterSkip,
+        collectedResponses: (afterSkip.collectedResponses || [])
+          .filter(r => r.playerId !== seatIndex),
+      };
+      // 모든 인간 pending이 해결되었는지 확인 → resolve 시도
+      return tryResolveCollected(cleaned);
+    }
+    case 'chi': {
+      if (!hasPendingAction(state, seatIndex, 'chi')) return state;
+      if (!Array.isArray(action.tileIds) || action.tileIds.length !== 2) return state;
+      const chosenAction = state.pendingActions.find(
+        a => a.playerId === seatIndex && a.action === 'chi'
+      )!;
+      return collectResponse(state, seatIndex, { ...chosenAction, tiles: action.tileIds });
+    }
+    case 'pon': {
+      if (!hasPendingAction(state, seatIndex, 'pon')) return state;
+      const chosenAction = state.pendingActions.find(
+        a => a.playerId === seatIndex && a.action === 'pon'
+      )!;
+      return collectResponse(state, seatIndex, chosenAction);
+    }
+    case 'kan': {
+      if (!hasPendingAction(state, seatIndex, 'kan')) return state;
+      const chosenAction = state.pendingActions.find(
+        a => a.playerId === seatIndex && a.action === 'kan'
+      )!;
+      return collectResponse(state, seatIndex, chosenAction);
+    }
+    case 'ron': {
+      if (!hasPendingAction(state, seatIndex, 'win')) return state;
+      const chosenAction = state.pendingActions.find(
+        a => a.playerId === seatIndex && a.action === 'win'
+      )!;
+      return collectResponse(state, seatIndex, chosenAction);
     }
     default:
       return state;
+  }
+}
+
+/**
+ * 인간 플레이어의 응답을 collectedResponses에 추가 후 resolve 시도
+ */
+function collectResponse(state: GameState, playerId: number, action: PendingAction): GameState {
+  const responses = state.collectedResponses || [];
+  // 이미 응답한 플레이어면 무시
+  if (responses.some(r => r.playerId === playerId)) return state;
+
+  const newState: GameState = {
+    ...state,
+    collectedResponses: [...responses, { playerId, action }],
+  };
+
+  return tryResolveCollected(newState);
+}
+
+/**
+ * 모든 인간 pending 플레이어가 응답(수집 또는 스킵)했는지 확인
+ * → 완료 시 AI 응답 추가 → 우선순위 resolve → 실행
+ */
+function tryResolveCollected(state: GameState): GameState {
+  if (state.phase !== 'action-pending') return state;
+  if (!state.lastDiscard) return state;
+
+  const responses = state.collectedResponses || [];
+  const pendingPlayerIds = Array.from(new Set(state.pendingActions.map(a => a.playerId)));
+
+  // 아직 응답 안 한 인간 플레이어가 있는지
+  for (const pid of pendingPlayerIds) {
+    if (state.players[pid].isAI) continue; // AI는 자동 처리
+    if (responses.some(r => r.playerId === pid)) continue; // 이미 응답함
+    return state; // 아직 대기 중인 인간 있음 → 상태 저장만
+  }
+
+  // 모든 인간 응답 완료 → AI 응답 수집
+  const allChosen: PendingAction[] = responses.map(r => r.action);
+
+  for (const pid of pendingPlayerIds) {
+    if (!state.players[pid].isAI) continue;
+    const playerActions = state.pendingActions.filter(a => a.playerId === pid);
+    const decision = aiRespondToActions(state, pid, playerActions);
+    if (decision) {
+      allChosen.push(decision);
+    }
+  }
+
+  // collectedResponses 초기화
+  const cleanState: GameState = { ...state, collectedResponses: [] };
+
+  // 아무도 액션하지 않음 → 다음 턴
+  if (allChosen.length === 0) {
+    return advanceTurn({ ...cleanState, pendingActions: [] });
+  }
+
+  // 우선순위 resolve
+  const topAction = resolveTopAction(allChosen, state.lastDiscard.playerId);
+  if (!topAction) {
+    return advanceTurn({ ...cleanState, pendingActions: [] });
+  }
+
+  // 최우선 액션 실행
+  switch (topAction.action) {
+    case 'win':
+      return declareRon(cleanState, topAction.playerId);
+    case 'kan':
+      return executeMinkan(cleanState, topAction.playerId);
+    case 'pon':
+      return executePon(cleanState, topAction.playerId);
+    case 'chi':
+      return executeChi(cleanState, topAction.playerId, topAction.tiles);
+    default:
+      return advanceTurn({ ...cleanState, pendingActions: [] });
   }
 }
 
@@ -206,6 +316,10 @@ function applyAction(state: GameState, seatIndex: number, action: GameAction): G
 function hasPendingAction(state: GameState, seatIndex: number, actionType: string): boolean {
   return state.pendingActions.some(a => a.playerId === seatIndex && a.action === actionType);
 }
+
+// ============================================================
+// AI 턴 처리
+// ============================================================
 
 /** AI 턴 연속 처리 (사람 차례가 올 때까지 반복) */
 function processAITurns(state: GameState): GameState {
@@ -215,13 +329,20 @@ function processAITurns(state: GameState): GameState {
   while (iterations++ < MAX_ITERATIONS) {
     if (state.phase === 'game-over') break;
 
-    // action-pending: AI 응답 처리
+    // action-pending: 인간 응답 대기 확인
     if (state.phase === 'action-pending') {
-      const aiResponses = processAIPendingActions(state);
-      if (aiResponses === null) {
-        break; // 사람 플레이어의 응답 대기 중
+      const pendingPlayerIds = Array.from(new Set(state.pendingActions.map(a => a.playerId)));
+      const hasHumanPending = pendingPlayerIds.some(pid => !state.players[pid].isAI);
+
+      if (hasHumanPending) {
+        // 인간이 있으면 tryResolveCollected에서 처리
+        break;
       }
-      state = aiResponses;
+
+      // AI만 남음 → 즉시 처리
+      const resolved = processAIOnlyPending(state);
+      if (!resolved) break;
+      state = resolved;
       continue;
     }
 
@@ -271,39 +392,29 @@ function aiCheckAnkan(state: GameState, playerIdx: number): number | null {
   const options = getAnkanOptions(fullHand);
   if (options.length === 0) return null;
 
-  // Easy: 암깡 안 함, Normal: 50%, Hard: 항상
   if (state.difficulty === 'easy') return null;
   if (state.difficulty === 'normal' && Math.random() > 0.5) return null;
   return options[0];
 }
 
-/** action-pending 상태에서 AI 응답 수집 및 처리 */
-function processAIPendingActions(state: GameState): GameState | null {
+/** action-pending에서 AI만 남은 경우 즉시 처리 */
+function processAIOnlyPending(state: GameState): GameState | null {
   if (!state.lastDiscard) return null;
 
   const pendingPlayerIds = Array.from(new Set(state.pendingActions.map(a => a.playerId)));
-
-  // 사람 플레이어가 pending에 있으면 대기
-  for (const pid of pendingPlayerIds) {
-    if (!state.players[pid].isAI) return null;
-  }
-
-  // 모두 AI → 자동 처리
-  const aiDecisions: Array<{ playerId: number; action: PendingAction | null }> = [];
+  const aiDecisions: PendingAction[] = [];
 
   for (const pid of pendingPlayerIds) {
     const playerActions = state.pendingActions.filter(a => a.playerId === pid);
     const decision = aiRespondToActions(state, pid, playerActions);
-    aiDecisions.push({ playerId: pid, action: decision });
+    if (decision) aiDecisions.push(decision);
   }
 
-  const chosen = aiDecisions.filter(d => d.action !== null).map(d => d.action!);
-
-  if (chosen.length === 0) {
+  if (aiDecisions.length === 0) {
     return advanceTurn({ ...state, pendingActions: [] });
   }
 
-  const topAction = resolveTopAction(chosen, state.lastDiscard.playerId);
+  const topAction = resolveTopAction(aiDecisions, state.lastDiscard.playerId);
   if (!topAction) {
     return advanceTurn({ ...state, pendingActions: [] });
   }
@@ -319,5 +430,36 @@ function processAIPendingActions(state: GameState): GameState | null {
       return executeChi(state, topAction.playerId, topAction.tiles);
     default:
       return advanceTurn({ ...state, pendingActions: [] });
+  }
+}
+
+// ============================================================
+// 게임 종료 처리
+// ============================================================
+
+/** 게임 오버 시 전적 반영 + 방 상태 업데이트 */
+async function handleGameOver(roomId: string, state: GameState) {
+  // 방 상태 → finished
+  await supabaseAdmin
+    .from('mahjong_rooms')
+    .update({ status: 'finished' })
+    .eq('id', roomId);
+
+  // 전적 반영 (인간 플레이어만)
+  const { data: players } = await supabaseAdmin
+    .from('mahjong_room_players')
+    .select('player_id, seat_index, is_ai')
+    .eq('room_id', roomId);
+
+  if (!players) return;
+
+  for (const p of players) {
+    if (p.is_ai) continue;
+    // total_games + 1
+    await supabaseAdmin.rpc('increment_games', { p_id: p.player_id });
+    // 승자면 total_wins + 1
+    if (state.winner === p.seat_index) {
+      await supabaseAdmin.rpc('increment_wins', { p_id: p.player_id });
+    }
   }
 }
