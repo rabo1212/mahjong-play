@@ -1,9 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { supabase } from '@/lib/supabase/client';
+
+interface RoomListItem {
+  id: string;
+  code: string;
+  hostNickname: string;
+  playerCount: number;
+  difficulty: string;
+  beginnerMode: boolean;
+  createdAt: string;
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return '방금 전';
+  const min = Math.floor(diff / 60);
+  return `${min}분 전`;
+}
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  easy: '쉬움',
+  normal: '보통',
+  hard: '어려움',
+};
 
 export default function LobbyPage() {
   const router = useRouter();
@@ -15,10 +38,39 @@ export default function LobbyPage() {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
 
+  // 방 목록
+  const [rooms, setRooms] = useState<RoomListItem[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(false);
+  const [joiningRoomCode, setJoiningRoomCode] = useState<string | null>(null);
+
   // 세션 복원
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
+
+  // 방 목록 가져오기
+  const fetchRooms = useCallback(async () => {
+    try {
+      setRoomsLoading(true);
+      const res = await fetch('/api/rooms');
+      const data = await res.json();
+      if (res.ok) {
+        setRooms(data.rooms || []);
+      }
+    } catch {
+      // 폴링이므로 다음에 재시도
+    } finally {
+      setRoomsLoading(false);
+    }
+  }, []);
+
+  // 로그인 후 방 목록 폴링 (10초)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchRooms();
+    const interval = setInterval(fetchRooms, 10_000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchRooms]);
 
   // 닉네임 입력 후 익명 로그인
   const handleLogin = async () => {
@@ -50,7 +102,7 @@ export default function LobbyPage() {
     }
   };
 
-  // 방 참가
+  // 코드로 참가
   const handleJoin = async () => {
     const code = joinCode.trim().toUpperCase();
     if (code.length !== 4) {
@@ -63,9 +115,7 @@ export default function LobbyPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/rooms/${code}/join`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -74,6 +124,26 @@ export default function LobbyPage() {
       setError(e instanceof Error ? e.message : '참가 실패');
     } finally {
       setJoining(false);
+    }
+  };
+
+  // 방 카드 클릭으로 참가
+  const handleJoinRoom = async (roomCode: string) => {
+    setJoiningRoomCode(roomCode);
+    setError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/rooms/${roomCode}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      router.push(`/room/${roomCode}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '참가 실패');
+    } finally {
+      setJoiningRoomCode(null);
     }
   };
 
@@ -132,7 +202,7 @@ export default function LobbyPage() {
 
   // 로그인 완료 → 로비
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-base px-4">
+    <main className="min-h-screen flex flex-col items-center bg-base px-4 py-8">
       <h1 className="text-3xl sm:text-5xl font-display font-bold text-gold mb-1"
         style={{ textShadow: '0 0 30px rgba(212,168,75,0.3)' }}>
         MahjongPlay
@@ -196,6 +266,78 @@ export default function LobbyPage() {
         {/* 에러 메시지 */}
         {error && (
           <p className="text-xs text-action-danger text-center animate-fade-in">{error}</p>
+        )}
+      </div>
+
+      {/* 대기 중인 방 목록 */}
+      <div className="w-full max-w-sm mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-text-secondary">
+            대기 중인 방
+          </h2>
+          <button
+            onClick={fetchRooms}
+            disabled={roomsLoading}
+            className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {roomsLoading ? '새로고침 중...' : '새로고침'}
+          </button>
+        </div>
+
+        {rooms.length === 0 ? (
+          <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
+            <p className="text-sm text-text-muted">
+              대기 중인 방이 없습니다.
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              새로 만들어보세요!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {rooms.map((room) => (
+              <button
+                key={room.id}
+                onClick={() => handleJoinRoom(room.code)}
+                disabled={joiningRoomCode !== null}
+                className="w-full bg-panel rounded-xl border border-white/5 hover:border-gold/20
+                  p-4 text-left transition-all cursor-pointer
+                  hover:bg-panel-light active:scale-[0.99]
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-bold text-gold text-sm tracking-wider">
+                      {room.code}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-text-muted">
+                      {DIFFICULTY_LABELS[room.difficulty] || room.difficulty}
+                    </span>
+                    {room.beginnerMode && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold">
+                        초보
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-text-muted">
+                    {timeAgo(room.createdAt)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-secondary">
+                    {room.hostNickname}
+                  </span>
+                  <span className="text-xs font-display">
+                    <span className="text-gold font-semibold">{room.playerCount}</span>
+                    <span className="text-text-muted">/4</span>
+                  </span>
+                </div>
+                {joiningRoomCode === room.code && (
+                  <div className="text-xs text-gold mt-1 animate-pulse">참가 중...</div>
+                )}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
