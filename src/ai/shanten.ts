@@ -134,8 +134,8 @@ export function calculateShanten(kinds: TileKind[], meldCount: number = 0): numb
 
   let best = shantenStandard(counts, meldCount);
 
-  // 특수형은 부로 없을 때만
-  if (meldCount === 0 && kinds.length === 13) {
+  // 특수형은 부로 없을 때만 (13장 or 14장 모두)
+  if (meldCount === 0) {
     best = Math.min(best, shantenSevenPairs(counts));
     best = Math.min(best, shantenThirteenOrphans(counts));
   }
@@ -166,9 +166,11 @@ export function countEffectiveTiles(
   const currentShanten = calculateShanten(afterDiscard, meldCount);
   let count = 0;
 
+  // 한 번만 계산해서 재사용
+  const handCount = buildKindCounts(afterDiscard);
+
   for (const testKind of ALL_TILE_KINDS) {
     // 남은 매수 체크
-    const handCount = buildKindCounts(afterDiscard);
     const totalUsed = visibleCounts[testKind] + handCount[testKind];
     const remaining = 4 - totalUsed;
     if (remaining <= 0) continue;

@@ -168,12 +168,11 @@ export function calculateScore(
     detected.push({ id: 'concealed_hand', count: 1 });
   }
 
-  // 번패(Dragon Pung): 삼원패 커쯔 (개별)
+  // 번패(Dragon Pung): 삼원패 커쯔 (개별) — count로 합산
   if (!detected.some(d => ['big_three_dragons', 'small_three_dragons'].includes(d.id))) {
-    for (const dk of [51, 52, 53]) {
-      if (hasTripletOf(allMelds, dk)) {
-        detected.push({ id: 'dragon_pung', count: 1 });
-      }
+    const dragonPungs = [51, 52, 53].filter(dk => hasTripletOf(allMelds, dk)).length;
+    if (dragonPungs > 0) {
+      detected.push({ id: 'dragon_pung', count: dragonPungs });
     }
   }
 

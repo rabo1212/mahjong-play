@@ -127,6 +127,9 @@ export function createAllTiles(): Tile[] {
 /** id로 Tile 조회 */
 export function getTile(id: TileId): Tile {
   const tiles = createAllTiles();
+  if (id < 0 || id >= tiles.length) {
+    throw new Error(`Invalid TileId: ${id} (valid range: 0~${tiles.length - 1})`);
+  }
   return tiles[id];
 }
 
@@ -155,9 +158,9 @@ export function createFullTileIds(): TileId[] {
   return createAllTiles().map(t => t.id);
 }
 
-/** kind별 카운트 맵 생성 (최대 kind=53, 인덱스용으로 60 확보) */
+/** kind별 카운트 맵 생성 (최대 kind=68 꽃패, 인덱스용으로 70 확보) */
 export function buildKindCounts(kinds: TileKind[]): number[] {
-  const counts = new Array(60).fill(0);
+  const counts = new Array(70).fill(0);
   for (const k of kinds) {
     counts[k]++;
   }

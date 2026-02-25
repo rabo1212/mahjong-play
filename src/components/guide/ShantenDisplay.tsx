@@ -13,9 +13,9 @@ interface ShantenDisplayProps {
 
 const SHANTEN_LABELS: Record<number, { text: string; color: string }> = {
   [-1]: { text: '화료!', color: 'text-gold' },
-  0: { text: '텐파이', color: 'text-action-win' },
-  1: { text: '이향청', color: 'text-action-chi' },
-  2: { text: '이향청', color: 'text-action-pon' },
+  0: { text: '텐파이', color: 'text-action-success' },
+  1: { text: '이향청', color: 'text-action-blue' },
+  2: { text: '삼향청', color: 'text-text-secondary' },
 };
 
 export default function ShantenDisplay({ hand, drawnTile, meldCount }: ShantenDisplayProps) {

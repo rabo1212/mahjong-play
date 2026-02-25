@@ -16,7 +16,9 @@ export function aiChooseDiscard(state: GameState, playerIdx: number): TileId {
     ? [...player.hand, player.drawnTile]
     : [...player.hand];
 
-  if (allTileIds.length === 0) return player.hand[0];
+  if (allTileIds.length === 0) {
+    throw new Error(`AI player ${playerIdx} has no tiles to discard`);
+  }
 
   switch (state.difficulty) {
     case 'easy':
@@ -223,7 +225,7 @@ function hardRespondToAction(
 
 /** 모든 보이는 패의 kind 카운트 */
 function getVisibleCounts(state: GameState): number[] {
-  const counts = new Array(60).fill(0);
+  const counts = new Array(70).fill(0);
 
   for (const player of state.players) {
     // 버림패

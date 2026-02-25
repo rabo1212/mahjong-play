@@ -7,7 +7,7 @@ import {
 } from '@/engine/types';
 import {
   createInitialGameState, startGame, doDiscard,
-  executeChi, executePon, executeMinkan,
+  executeChi, executePon, executeMinkan, executeAnkan,
   declareTsumo, declareRon, advanceTurn,
   checkTsumoWin,
 } from '@/engine/game-manager';
@@ -21,6 +21,7 @@ interface GameStore extends GameState {
   initGame: (difficulty: Difficulty, beginnerMode: boolean) => void;
   playerDiscard: (tileId: TileId) => void;
   playerAction: (action: ActionType, tiles?: TileId[]) => void;
+  playerAnkan: (kanKind: TileKind) => void;
   playerSkip: () => void;
   aiTurn: () => void;
   aiRespondToAction: () => void;
@@ -79,6 +80,13 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     }
   },
 
+  playerAnkan: (kanKind) => {
+    const state = get();
+    if (state.turnIndex !== 0 || state.phase !== 'discard') return;
+    const newState = executeAnkan(state, 0, kanKind);
+    set({ ...newState });
+  },
+
   playerSkip: () => {
     const state = get();
     // 플레이어가 패스 → 플레이어의 pending action 제거
@@ -118,7 +126,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     }
 
     // AI 버리기: 난이도별 전략 사용
-    if (state.phase === 'discard' && player.drawnTile !== null) {
+    // 치/펑 후에는 drawnTile이 null이지만 버리기 단계임 → 가드 제거
+    if (state.phase === 'discard') {
       const tileToDiscard = aiChooseDiscard(state, playerIdx);
       const newState = doDiscard(state, tileToDiscard);
       set({ ...newState });

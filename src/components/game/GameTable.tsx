@@ -5,7 +5,6 @@ import { useGameStore } from '@/stores/useGameStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { TileId, ActionType } from '@/engine/types';
-import { executeAnkan } from '@/engine/game-manager';
 import PlayerHand from './PlayerHand';
 import OpponentHand from './OpponentHand';
 import DiscardPool from './DiscardPool';
@@ -51,6 +50,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   const getPlayerActions = useGameStore(s => s.getPlayerActions);
   const canPlayerTsumo = useGameStore(s => s.canPlayerTsumo);
   const getPlayerAnkanOptions = useGameStore(s => s.getPlayerAnkanOptions);
+  const playerAnkan = useGameStore(s => s.playerAnkan);
 
   // 게임 루프
   useGameLoop();
@@ -136,14 +136,13 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     if (soundEnabled) playCall();
 
     if (action === 'ankan' && tiles) {
-      const state = useGameStore.getState();
-      const newState = executeAnkan(state, 0, tiles[0]);
-      useGameStore.setState(newState);
+      playerAnkan(tiles[0]);
+      setSelectedTile(null);
       return;
     }
     playerAction(action as ActionType, tiles);
     setSelectedTile(null);
-  }, [playerAction, soundEnabled, handleInteraction]);
+  }, [playerAction, playerAnkan, soundEnabled, handleInteraction]);
 
   const handleSkip = useCallback(() => {
     handleInteraction();

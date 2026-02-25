@@ -92,9 +92,10 @@ export function checkTsumoWin(state: GameState): boolean {
   if (decomps.length === 0) return false;
 
   if (!state.beginnerMode) {
-    // 8점 제한 체크
+    // 8점 제한 체크 — 모든 분해 중 최고점으로 판정
     const allKinds = [...handKinds, ...player.melds.flatMap(m => m.tileKinds)];
-    const scoring = calculateScore(decomps[0], {
+    const isMenzen = player.melds.every(m => m.type === 'ankan') || player.melds.length === 0;
+    const winContext: Parameters<typeof calculateScore>[1] = {
       roundWind: state.roundWind,
       seatWind: player.seatWind,
       isTsumo: true,
@@ -103,9 +104,13 @@ export function checkTsumoWin(state: GameState): boolean {
       isKanDraw: false,
       flowerCount: player.flowers.length,
       melds: player.melds,
-      isMenzen: player.melds.length === 0,
-    }, allKinds);
-    return scoring.meetsMinimum;
+      isMenzen,
+    };
+    for (const d of decomps) {
+      const scoring = calculateScore(d, winContext, allKinds);
+      if (scoring.meetsMinimum) return true;
+    }
+    return false;
   }
 
   return true;
@@ -121,6 +126,11 @@ export function doDiscard(state: GameState, tileId: TileId): GameState {
   let fullHand = [...player.hand];
   if (player.drawnTile !== null) {
     fullHand.push(player.drawnTile);
+  }
+
+  // 타일 소유권 검증
+  if (!fullHand.includes(tileId)) {
+    return state; // 소유하지 않은 타일은 버릴 수 없음
   }
 
   // 지정 타일 제거
@@ -359,7 +369,8 @@ export function declareRon(state: GameState, winnerId: number): GameState {
   if (decomps.length === 0) return state;
 
   const allKinds = [...handKinds, ...winner.melds.flatMap(m => m.tileKinds)];
-  const scoring = calculateScore(decomps[0], {
+  const isMenzen = winner.melds.every(m => m.type === 'ankan') || winner.melds.length === 0;
+  const winContext: Parameters<typeof calculateScore>[1] = {
     roundWind: state.roundWind,
     seatWind: winner.seatWind,
     isTsumo: false,
@@ -368,16 +379,27 @@ export function declareRon(state: GameState, winnerId: number): GameState {
     isKanDraw: false,
     flowerCount: winner.flowers.length,
     melds: winner.melds,
-    isMenzen: winner.melds.length === 0,
-  }, allKinds);
+    isMenzen,
+  };
 
-  if (!state.beginnerMode && !scoring.meetsMinimum) return state;
+  // 모든 분해를 비교해서 최고 점수 선택
+  let bestDecomp = decomps[0];
+  let bestScoring = calculateScore(decomps[0], winContext, allKinds);
+  for (let i = 1; i < decomps.length; i++) {
+    const s = calculateScore(decomps[i], winContext, allKinds);
+    if (s.totalPoints > bestScoring.totalPoints) {
+      bestDecomp = decomps[i];
+      bestScoring = s;
+    }
+  }
+
+  if (!state.beginnerMode && !bestScoring.meetsMinimum) return state;
 
   return {
     ...state,
     phase: 'game-over' as GamePhase,
     winner: winnerId,
-    winResult: { decomposition: decomps[0], scoring },
+    winResult: { decomposition: bestDecomp, scoring: bestScoring },
     pendingActions: [],
   };
 }
@@ -393,7 +415,8 @@ export function declareTsumo(state: GameState, playerId: number): GameState {
   if (decomps.length === 0) return state;
 
   const allKinds = [...handKinds, ...player.melds.flatMap(m => m.tileKinds)];
-  const scoring = calculateScore(decomps[0], {
+  const isMenzen = player.melds.every(m => m.type === 'ankan') || player.melds.length === 0;
+  const winContext: Parameters<typeof calculateScore>[1] = {
     roundWind: state.roundWind,
     seatWind: player.seatWind,
     isTsumo: true,
@@ -402,16 +425,27 @@ export function declareTsumo(state: GameState, playerId: number): GameState {
     isKanDraw: false,
     flowerCount: player.flowers.length,
     melds: player.melds,
-    isMenzen: player.melds.length === 0,
-  }, allKinds);
+    isMenzen,
+  };
 
-  if (!state.beginnerMode && !scoring.meetsMinimum) return state;
+  // 모든 분해를 비교해서 최고 점수 선택
+  let bestDecomp = decomps[0];
+  let bestScoring = calculateScore(decomps[0], winContext, allKinds);
+  for (let i = 1; i < decomps.length; i++) {
+    const s = calculateScore(decomps[i], winContext, allKinds);
+    if (s.totalPoints > bestScoring.totalPoints) {
+      bestDecomp = decomps[i];
+      bestScoring = s;
+    }
+  }
+
+  if (!state.beginnerMode && !bestScoring.meetsMinimum) return state;
 
   return {
     ...state,
     phase: 'game-over' as GamePhase,
     winner: playerId,
-    winResult: { decomposition: decomps[0], scoring },
+    winResult: { decomposition: bestDecomp, scoring: bestScoring },
     pendingActions: [],
   };
 }
