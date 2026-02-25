@@ -402,6 +402,13 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
               : 'bg-panel/60 text-text-secondary'
           }`}>
             {topPlayer.isAI ? `AI (${windLabels[(seatIndex + 2) % 4]})` : `${topPlayer.name} (${windLabels[(seatIndex + 2) % 4]})`}
+            {presenceReady && !topPlayer.isAI && (
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ml-1 ${
+                playerPresence[(seatIndex + 2) % 4] === false
+                  ? 'bg-action-danger'
+                  : 'bg-green-500'
+              }`} />
+            )}
             {presenceReady && !topPlayer.isAI && playerPresence[(seatIndex + 2) % 4] === false && (
               <span className="ml-1 text-action-danger">(끊김)</span>
             )}
@@ -419,6 +426,13 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 : 'bg-panel/60 text-text-secondary'
             }`}>
               {leftPlayer.isAI ? `AI (${windLabels[(seatIndex + 3) % 4]})` : `${leftPlayer.name} (${windLabels[(seatIndex + 3) % 4]})`}
+              {presenceReady && !leftPlayer.isAI && (
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ml-1 ${
+                  playerPresence[(seatIndex + 3) % 4] === false
+                    ? 'bg-action-danger'
+                    : 'bg-green-500'
+                }`} />
+              )}
               {presenceReady && !leftPlayer.isAI && playerPresence[(seatIndex + 3) % 4] === false && (
                 <span className="ml-1 text-action-danger">(끊김)</span>
               )}
@@ -437,6 +451,13 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 : 'bg-panel/60 text-text-secondary'
             }`}>
               {rightPlayer.isAI ? `AI (${windLabels[(seatIndex + 1) % 4]})` : `${rightPlayer.name} (${windLabels[(seatIndex + 1) % 4]})`}
+              {presenceReady && !rightPlayer.isAI && (
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ml-1 ${
+                  playerPresence[(seatIndex + 1) % 4] === false
+                    ? 'bg-action-danger'
+                    : 'bg-green-500'
+                }`} />
+              )}
               {presenceReady && !rightPlayer.isAI && playerPresence[(seatIndex + 1) % 4] === false && (
                 <span className="ml-1 text-action-danger">(끊김)</span>
               )}

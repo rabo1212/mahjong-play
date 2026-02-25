@@ -243,6 +243,13 @@ function SeatSlot({
         <span className="text-xs text-text-muted italic">빈 자리</span>
       ) : (
         <div className="flex items-center gap-2 flex-1">
+          {!player.isAI && (
+            <span className={`w-2 h-2 rounded-full shrink-0 ${
+              player.isConnected
+                ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]'
+                : 'bg-white/20'
+            }`} />
+          )}
           <span className={`text-sm font-semibold ${isCurrentUser ? 'text-gold' : 'text-text-primary'}`}>
             {player.nickname}
           </span>
