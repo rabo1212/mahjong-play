@@ -15,6 +15,9 @@ import TurnIndicator from './TurnIndicator';
 import ActionPopup from './ActionPopup';
 import ChatPanel from './ChatPanel';
 import OnlineGameOverModal from './OnlineGameOverModal';
+import ShantenDisplay from '@/components/guide/ShantenDisplay';
+import WaitingTiles from '@/components/guide/WaitingTiles';
+import TileRecommend from '@/components/guide/TileRecommend';
 import { getTile } from '@/engine/tiles';
 import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 import { supabase } from '@/lib/supabase/client';
@@ -54,6 +57,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
 
   // 설정
   const soundEnabled = useSettingsStore(s => s.soundEnabled);
+  const showHints = useSettingsStore(s => s.showHints);
 
   // 이전 턴 추적 (효과음용)
   const prevTurnRef = useRef<number | null>(null);
@@ -552,6 +556,33 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
         )}
 
         <div className="bg-gradient-to-t from-base via-base/95 to-transparent pt-2 sm:pt-4 pb-1 sm:pb-2 px-2 sm:px-4">
+          {/* 초보자 가이드 */}
+          {showHints && (
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
+              <ShantenDisplay
+                hand={myPlayer.hand}
+                drawnTile={myPlayer.drawnTile}
+                meldCount={myPlayer.melds.length}
+              />
+              <WaitingTiles
+                hand={myPlayer.hand}
+                drawnTile={myPlayer.drawnTile}
+                meldCount={myPlayer.melds.length}
+              />
+              <TileRecommend
+                hand={myPlayer.hand}
+                drawnTile={myPlayer.drawnTile}
+                meldCount={myPlayer.melds.length}
+                isMyTurn={isMyTurn}
+                phase={gameState.phase}
+                onTileSelect={(tileId) => {
+                  if (soundEnabled) playClick();
+                  setSelectedTile(tileId);
+                }}
+              />
+            </div>
+          )}
+
           <div className="flex items-center justify-center">
             <div className={`mr-2 sm:mr-4 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full flex-shrink-0 ${
               isMyTurn
