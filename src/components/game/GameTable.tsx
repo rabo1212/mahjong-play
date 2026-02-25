@@ -27,6 +27,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   const [selectedTile, setSelectedTile] = useState<TileId | null>(null);
   const [recorded, setRecorded] = useState(false);
   const [actionPopup, setActionPopup] = useState<{ action: string; playerId: number } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const actionPopupKeyRef = useRef(0);
 
   // 게임 상태
@@ -43,7 +44,9 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
 
   // 설정
   const showHints = useSettingsStore(s => s.showHints);
+  const setShowHints = useSettingsStore(s => s.setShowHints);
   const soundEnabled = useSettingsStore(s => s.soundEnabled);
+  const setSoundEnabled = useSettingsStore(s => s.setSoundEnabled);
 
   // 액션
   const playerDiscard = useGameStore(s => s.playerDiscard);
@@ -198,6 +201,49 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
         <div className="text-4xl">📱</div>
         <p className="text-text-secondary text-sm">가로 모드로 회전해주세요</p>
       </div>
+
+      {/* 설정 버튼 */}
+      {phase !== 'game-over' && (
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="absolute top-2 left-2 z-40 px-3 py-1.5 rounded-lg text-[10px]
+            bg-panel/80 text-text-muted border border-white/5
+            hover:text-text-secondary hover:border-white/10 transition-colors cursor-pointer"
+        >
+          설정
+        </button>
+      )}
+
+      {/* 설정 팝업 */}
+      {showSettings && (
+        <div className="absolute top-10 left-2 z-50 bg-panel rounded-xl border border-white/10
+          shadow-panel p-4 w-44 space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-text-secondary">효과음</span>
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer
+                ${soundEnabled ? 'bg-gold/40' : 'bg-white/10'}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all
+                ${soundEnabled ? 'left-[1.1rem] bg-gold' : 'left-0.5 bg-text-muted'}`}
+              />
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-text-secondary">가이드</span>
+            <button
+              onClick={() => setShowHints(!showHints)}
+              className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer
+                ${showHints ? 'bg-gold/40' : 'bg-white/10'}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all
+                ${showHints ? 'left-[1.1rem] bg-gold' : 'left-0.5 bg-text-muted'}`}
+              />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 마작 테이블 */}
       <div className="absolute inset-2 sm:inset-4 md:inset-6 lg:inset-8 rounded-2xl table-bg overflow-hidden">
