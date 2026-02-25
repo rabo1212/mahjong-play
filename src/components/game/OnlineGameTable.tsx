@@ -16,6 +16,7 @@ import ChatPanel from './ChatPanel';
 import OnlineGameOverModal from './OnlineGameOverModal';
 import { getTile } from '@/engine/tiles';
 import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
+import { supabase } from '@/lib/supabase/client';
 
 interface OnlineGameTableProps {
   roomId: string;
@@ -193,6 +194,27 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     }
   }, [roomCode, rematchLoading]);
 
+  // 나가기 (leave API 호출 후 로비로)
+  const handleLeave = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/rooms/${roomCode}/leave`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+    } catch {
+      // 실패해도 로비로 이동
+    }
+    onBackToMenu();
+  }, [roomCode, onBackToMenu]);
+
+  // 게임 중 나가기 (확인 포함)
+  const handleLeaveWithConfirm = useCallback(() => {
+    if (window.confirm('게임을 나가시겠습니까?\n나가면 타이머로 자동 진행됩니다.')) {
+      handleLeave();
+    }
+  }, [handleLeave]);
+
   // 턴 타이머 만료 → 서버에 timeout 전송 (ref로 안정화)
   const sendActionRef = useRef(sendAction);
   sendActionRef.current = sendAction;
@@ -316,6 +338,18 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
         <div className="text-4xl">📱</div>
         <p className="text-text-secondary text-sm">가로 모드로 회전해주세요</p>
       </div>
+
+      {/* 나가기 버튼 */}
+      {gameState.phase !== 'game-over' && (
+        <button
+          onClick={handleLeaveWithConfirm}
+          className="absolute top-2 left-2 z-40 px-3 py-1.5 rounded-lg text-[10px]
+            bg-panel/80 text-text-muted border border-white/5
+            hover:text-text-secondary hover:border-white/10 transition-colors cursor-pointer"
+        >
+          나가기
+        </button>
+      )}
 
       {/* 연결 상태 배너 */}
       {connectionStatus === 'disconnected' && (
@@ -539,7 +573,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
           gameState={gameState}
           seatIndex={seatIndex}
           onRematch={handleRematch}
-          onBackToMenu={onBackToMenu}
+          onBackToMenu={handleLeave}
           rematchLoading={rematchLoading}
         />
       )}
