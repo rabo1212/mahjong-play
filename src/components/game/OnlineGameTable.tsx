@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useOnlineGameStore } from '@/stores/useOnlineGameStore';
 import { useOnlineSync } from '@/hooks/useOnlineSync';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -42,6 +42,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
   const error = useOnlineGameStore(s => s.error);
   const actionPending = useOnlineGameStore(s => s.actionPending);
   const sendAction = useOnlineGameStore(s => s.sendAction);
+  const storeVersion = useOnlineGameStore(s => s.version);
 
   // 설정
   const soundEnabled = useSettingsStore(s => s.soundEnabled);
@@ -197,6 +198,13 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     if (actionPendingRef.current) return;
     sendActionRef.current({ type: 'timeout' });
   }, []);
+
+  // turnDeadline 메모이제이션: version이 바뀔 때만 재계산 (렌더 안정성)
+  const memoizedDeadline = useMemo(() => {
+    if (!gameState || gameState.turnRemainingMs == null) return null;
+    return Date.now() + gameState.turnRemainingMs;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeVersion]);
 
   // 로딩 중
   if (isLoading || !gameState || seatIndex === null) {
@@ -368,9 +376,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 turnIndex={rotatedTurnIndex}
                 wallCount={gameState.wallTileCount}
                 turnCount={gameState.turnCount}
-                turnDeadline={gameState.turnRemainingMs != null
-                  ? Date.now() + gameState.turnRemainingMs
-                  : null}
+                turnDeadline={memoizedDeadline}
                 onTimeout={handleTimeout}
               />
               <DiscardPool

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAuthenticatedClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createInitialGameState, startGame } from '@/engine/game-manager';
-import { processStartAITurns } from '@/lib/ai-turn-processor';
+import { processStartAITurns, setDeadlineIfNeeded } from '@/lib/ai-turn-processor';
 import type { GameState } from '@/engine/types';
 
 export async function POST(
@@ -101,10 +101,8 @@ export async function POST(
     finalState = processStartAITurns(finalState);
   }
 
-  // 인간 턴이면 타이머 설정
-  if (!finalState.players[finalState.turnIndex].isAI && finalState.phase !== 'game-over') {
-    finalState.turnDeadline = Date.now() + 30_000;
-  }
+  // phase에 맞는 타이머 설정 (discard 30초, action-pending 15초)
+  finalState = setDeadlineIfNeeded(finalState);
 
   // game_states에 저장 (service_role로)
   const { error: stateError } = await supabaseAdmin

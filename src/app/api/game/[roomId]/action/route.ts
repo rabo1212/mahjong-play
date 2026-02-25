@@ -270,8 +270,8 @@ function applyAction(state: GameState, seatIndex: number, action: GameAction): G
   if (action.type === 'timeout') {
     if (state.phase === 'discard' && state.turnIndex !== seatIndex) return state;
     if (state.phase === 'action-pending' && !state.pendingActions.some(a => a.playerId === seatIndex)) return state;
-    // timeout 액션은 유예 없이 즉시 처리 (클라이언트에서 이미 대기함)
-    if (!state.turnDeadline) return state;
+    // deadline이 실제로 경과했는지 검증 (악용 방지, 1초 여유)
+    if (!state.turnDeadline || Date.now() < state.turnDeadline - 1000) return state;
     const forceExpired = forceProcessExpiredTurn(state);
     return forceExpired !== state ? forceExpired : state;
   }
