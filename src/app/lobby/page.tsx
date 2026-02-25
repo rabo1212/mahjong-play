@@ -53,6 +53,10 @@ export default function LobbyPage() {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
 
+  // 방 생성 설정
+  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('easy');
+  const [beginnerMode, setBeginnerMode] = useState(true);
+
   // 방 목록
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
@@ -129,7 +133,7 @@ export default function LobbyPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ difficulty: 'easy', beginnerMode: true }),
+        body: JSON.stringify({ difficulty, beginnerMode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -260,6 +264,43 @@ export default function LobbyPage() {
       </div>
 
       <div className="bg-panel rounded-2xl border border-white/5 shadow-panel p-6 w-full max-w-sm space-y-4">
+        {/* 난이도 선택 */}
+        <div>
+          <label className="block text-xs text-text-secondary mb-2">난이도</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['easy', 'normal', 'hard'] as const).map((d) => (
+              <button
+                key={d}
+                onClick={() => setDifficulty(d)}
+                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer
+                  ${difficulty === d
+                    ? 'bg-gold/20 text-gold border border-gold/40'
+                    : 'bg-panel-light text-text-muted border border-white/5 hover:border-white/10'
+                  }`}
+              >
+                {DIFFICULTY_LABELS[d]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 초보자 모드 토글 */}
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs text-text-secondary">초보자 모드</span>
+            <p className="text-[10px] text-text-muted mt-0.5">8점 미만 역도 화료 가능</p>
+          </div>
+          <button
+            onClick={() => setBeginnerMode(!beginnerMode)}
+            className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer
+              ${beginnerMode ? 'bg-gold/40' : 'bg-white/10'}`}
+          >
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all
+              ${beginnerMode ? 'left-5 bg-gold' : 'left-0.5 bg-text-muted'}`}
+            />
+          </button>
+        </div>
+
         {/* 방 만들기 */}
         <button
           onClick={handleCreate}
