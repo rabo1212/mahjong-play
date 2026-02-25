@@ -336,12 +336,20 @@ export default function LobbyPage() {
       <div className="mb-2">
         <ProfileStatsCard stats={profileStats} loading={statsLoading} />
       </div>
-      <button
-        onClick={() => router.push('/leaderboard')}
-        className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer mb-6"
-      >
-        랭킹 보기 →
-      </button>
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={() => router.push('/leaderboard')}
+          className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer"
+        >
+          랭킹 보기 →
+        </button>
+        <button
+          onClick={() => router.push('/history')}
+          className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer"
+        >
+          전적 보기 →
+        </button>
+      </div>
 
       <div className="bg-panel rounded-2xl border border-white/5 shadow-panel p-6 w-full max-w-sm space-y-4">
         {/* 난이도 선택 */}
