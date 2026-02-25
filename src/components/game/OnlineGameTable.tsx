@@ -43,6 +43,9 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
   const actionPending = useOnlineGameStore(s => s.actionPending);
   const sendAction = useOnlineGameStore(s => s.sendAction);
   const storeVersion = useOnlineGameStore(s => s.version);
+  const connectionStatus = useOnlineGameStore(s => s.connectionStatus);
+  const presenceReady = useOnlineGameStore(s => s.presenceReady);
+  const playerPresence = useOnlineGameStore(s => s.playerPresence);
 
   // 설정
   const soundEnabled = useSettingsStore(s => s.soundEnabled);
@@ -199,6 +202,19 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     sendActionRef.current({ type: 'timeout' });
   }, []);
 
+  // 재연결 성공 토스트
+  const [showReconnected, setShowReconnected] = useState(false);
+  const prevConnectionRef = useRef(connectionStatus);
+  useEffect(() => {
+    if (prevConnectionRef.current !== 'connected' && connectionStatus === 'connected') {
+      setShowReconnected(true);
+      const timer = setTimeout(() => setShowReconnected(false), 3000);
+      prevConnectionRef.current = connectionStatus;
+      return () => clearTimeout(timer);
+    }
+    prevConnectionRef.current = connectionStatus;
+  }, [connectionStatus]);
+
   // turnDeadline 메모이제이션: version이 바뀔 때만 재계산 (렌더 안정성)
   const memoizedDeadline = useMemo(() => {
     if (!gameState || gameState.turnRemainingMs == null) return null;
@@ -296,8 +312,33 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
         <p className="text-text-secondary text-sm">가로 모드로 회전해주세요</p>
       </div>
 
+      {/* 연결 상태 배너 */}
+      {connectionStatus === 'disconnected' && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50
+          bg-action-danger/30 text-white text-xs px-4 py-2 rounded-full
+          border border-action-danger/50 animate-pulse flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-action-danger" />
+          연결이 끊어졌습니다. 재연결 시도 중...
+        </div>
+      )}
+      {connectionStatus === 'reconnecting' && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50
+          bg-gold/20 text-gold text-xs px-4 py-2 rounded-full
+          border border-gold/30 animate-pulse flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-gold" />
+          재연결 중...
+        </div>
+      )}
+      {showReconnected && connectionStatus === 'connected' && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50
+          bg-green-500/20 text-green-400 text-xs px-4 py-2 rounded-full
+          border border-green-500/30 animate-fade-in">
+          재연결 성공!
+        </div>
+      )}
+
       {/* 에러 표시 */}
-      {error && (
+      {error && connectionStatus === 'connected' && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50
           bg-action-danger/20 text-action-danger text-xs px-3 py-1 rounded-full animate-fade-in">
           {error}
@@ -322,6 +363,9 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
               : 'bg-panel/60 text-text-secondary'
           }`}>
             {topPlayer.isAI ? `AI (${windLabels[(seatIndex + 2) % 4]})` : `${topPlayer.name} (${windLabels[(seatIndex + 2) % 4]})`}
+            {presenceReady && !topPlayer.isAI && playerPresence[(seatIndex + 2) % 4] === false && (
+              <span className="ml-1 text-action-danger">(끊김)</span>
+            )}
           </div>
           <MeldDisplay melds={topPlayer.melds} position="top" />
           <OpponentHand player={topPlayer} position="top" />
@@ -336,6 +380,9 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 : 'bg-panel/60 text-text-secondary'
             }`}>
               {leftPlayer.isAI ? `AI (${windLabels[(seatIndex + 3) % 4]})` : `${leftPlayer.name} (${windLabels[(seatIndex + 3) % 4]})`}
+              {presenceReady && !leftPlayer.isAI && playerPresence[(seatIndex + 3) % 4] === false && (
+                <span className="ml-1 text-action-danger">(끊김)</span>
+              )}
             </div>
             <MeldDisplay melds={leftPlayer.melds} position="left" />
             <OpponentHand player={leftPlayer} position="left" />
@@ -351,6 +398,9 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 : 'bg-panel/60 text-text-secondary'
             }`}>
               {rightPlayer.isAI ? `AI (${windLabels[(seatIndex + 1) % 4]})` : `${rightPlayer.name} (${windLabels[(seatIndex + 1) % 4]})`}
+              {presenceReady && !rightPlayer.isAI && playerPresence[(seatIndex + 1) % 4] === false && (
+                <span className="ml-1 text-action-danger">(끊김)</span>
+              )}
             </div>
             <MeldDisplay melds={rightPlayer.melds} position="right" />
             <OpponentHand player={rightPlayer} position="right" />

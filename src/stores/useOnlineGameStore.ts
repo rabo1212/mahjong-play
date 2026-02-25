@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase/client';
 import type { GameStateDTO } from '@/engine/dto';
 import type { GameAction } from '@/lib/online-types';
 
+type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
+
 interface OnlineGameStore {
   // 상태
   roomId: string | null;
@@ -15,6 +17,11 @@ interface OnlineGameStore {
   isLoading: boolean;
   error: string | null;
   actionPending: boolean;
+
+  // 연결 상태
+  connectionStatus: ConnectionStatus;
+  presenceReady: boolean; // Presence sync가 한 번이라도 완료됐는지
+  playerPresence: Record<number, boolean>;
 
   // 초기화
   init: (roomId: string, roomCode: string) => void;
@@ -28,6 +35,11 @@ interface OnlineGameStore {
 
   // 액션 전송
   sendAction: (action: GameAction) => Promise<void>;
+
+  // 연결 상태 관리
+  setConnectionStatus: (status: ConnectionStatus) => void;
+  updatePresence: (presenceState: Record<string, { seatIndex?: number }[]>) => void;
+  handlePlayerLeave: (leftPresences: { seatIndex?: number }[]) => void;
 }
 
 export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
@@ -39,6 +51,9 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
   isLoading: false,
   error: null,
   actionPending: false,
+  connectionStatus: 'connected',
+  presenceReady: false,
+  playerPresence: {},
 
   init: (roomId, roomCode) => {
     set({ roomId, roomCode, gameState: null, version: 0, error: null });
@@ -54,6 +69,9 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
       isLoading: false,
       error: null,
       actionPending: false,
+      connectionStatus: 'connected',
+      presenceReady: false,
+      playerPresence: {},
     });
   },
 
@@ -126,5 +144,37 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : '액션 실패', actionPending: false });
     }
+  },
+
+  setConnectionStatus: (status) => {
+    set({ connectionStatus: status });
+  },
+
+  updatePresence: (presenceState) => {
+    const presence: Record<number, boolean> = {};
+    for (const key of Object.keys(presenceState)) {
+      const entries = presenceState[key];
+      for (const entry of entries) {
+        if (entry.seatIndex !== undefined) {
+          presence[entry.seatIndex] = true;
+        }
+      }
+    }
+    // 4좌석 전체 매핑
+    const full: Record<number, boolean> = {};
+    for (let i = 0; i < 4; i++) {
+      full[i] = presence[i] ?? false;
+    }
+    set({ playerPresence: full, presenceReady: true });
+  },
+
+  handlePlayerLeave: (leftPresences) => {
+    const current = { ...get().playerPresence };
+    for (const p of leftPresences) {
+      if (p.seatIndex !== undefined) {
+        current[p.seatIndex] = false;
+      }
+    }
+    set({ playerPresence: current });
   },
 }));

@@ -4,9 +4,14 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useOnlineGameStore } from '@/stores/useOnlineGameStore';
 
+/** 폴링 백업 간격 (ms) — Realtime 끊겼을 때만 활성화 */
+const POLL_INTERVAL_MS = 10_000;
+
 /**
  * Supabase Realtime 구독 훅
- * 구독 먼저 시작 → 초기 상태 fetch → 이벤트 누락 방지
+ * - broadcast: 게임 상태 + 방 이벤트
+ * - presence: 플레이어 연결 상태 추적
+ * - 연결 감지 + 폴링 백업 + 탭 복귀 감지
  */
 export function useOnlineSync(roomId: string | null, roomCode: string | null) {
   const store = useOnlineGameStore();
@@ -21,12 +26,8 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
     // 1단계: 스토어 초기화
     store.init(roomId, roomCode);
 
-    // 2단계: 채널 구독 시작 (seat 모르는 상태에서도 연결)
-    // seat별 이벤트는 fetchState 이후 별도 effect에서 처리
-    store.fetchState().then(() => {
-      // fetchState 완료 → seatIndex 확정됨
-      // 구독은 아래 두 번째 effect에서 처리
-    });
+    // 2단계: 초기 상태 fetch (seatIndex 확정)
+    store.fetchState();
 
     return () => {
       initializedRef.current = false;
@@ -39,35 +40,78 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
   useEffect(() => {
     if (!roomCode || store.seatIndex === null) return;
 
+    const seatIndex = store.seatIndex;
+
     const channel = supabase.channel(`room:${roomCode}`)
-      .on('broadcast', { event: `game_state:${store.seatIndex}` }, (payload) => {
+      // 게임 상태 broadcast
+      .on('broadcast', { event: `game_state:${seatIndex}` }, (payload) => {
         const { state, version } = payload.payload;
         if (state && version !== undefined) {
           store.setGameState(state, version);
         }
       })
+      // 방 이벤트 broadcast
       .on('broadcast', { event: 'room_update' }, (payload) => {
         const status = payload.payload?.status;
         if (status === 'finished') {
           store.fetchState();
         } else if (status === 'rematch') {
-          // 리매치: version을 리셋해야 새 게임(version=0)을 수신 가능
           useOnlineGameStore.setState({ version: -1 });
           store.fetchState();
         }
       })
-      .subscribe((status) => {
+      // Presence: sync만으로 상태 관리 (leave와의 경합 방지, sync가 source of truth)
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = channel.presenceState() as Record<string, { seatIndex?: number }[]>;
+        store.updatePresence(presenceState);
+      })
+      // 구독 상태 콜백
+      .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // 구독 확인 후 최신 상태 한번 더 fetch (구독 전 누락분 보정)
+          // Presence에 내 좌석 등록
+          try {
+            await channel.track({ seatIndex });
+          } catch {
+            // track 실패 시에도 게임 진행은 가능 (Presence만 미등록)
+          }
+          store.setConnectionStatus('connected');
+          // 구독 확인 후 최신 상태 fetch (누락분 보정)
           store.fetchState();
+        } else if (status === 'CHANNEL_ERROR') {
+          // Supabase가 자동 재연결 시도 중
+          store.setConnectionStatus('reconnecting');
+        } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+          store.setConnectionStatus('disconnected');
         }
       });
 
     channelRef.current = channel;
 
+    // 폴링 백업: 연결 끊겼을 때 10초마다 fetchState
+    const pollId = setInterval(() => {
+      const connStatus = useOnlineGameStore.getState().connectionStatus;
+      if (connStatus !== 'connected') {
+        store.fetchState();
+      }
+    }, POLL_INTERVAL_MS);
+
+    // 탭 복귀 감지: visibility 변경 시 상태 복원
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        store.fetchState();
+        // Presence 재등록 (탭이 백그라운드에서 돌아온 경우)
+        if (channelRef.current) {
+          channelRef.current.track({ seatIndex }).catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       channel.unsubscribe();
       channelRef.current = null;
+      clearInterval(pollId);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomCode, store.seatIndex]);

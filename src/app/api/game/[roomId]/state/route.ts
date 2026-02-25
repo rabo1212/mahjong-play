@@ -33,6 +33,13 @@ export async function GET(
     return NextResponse.json({ error: '이 방의 참가자가 아닙니다' }, { status: 403 });
   }
 
+  // 재접속 시 is_connected 갱신
+  await supabaseAdmin
+    .from('mahjong_room_players')
+    .update({ is_connected: true })
+    .eq('room_id', roomId)
+    .eq('player_id', user.id);
+
   // 게임 상태 조회 (service_role)
   const { data: gameRow } = await supabaseAdmin
     .from('mahjong_game_states')
