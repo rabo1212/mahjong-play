@@ -51,6 +51,10 @@ export default function Home() {
               </div>
               <div className="flex gap-4 sm:gap-6 text-center">
                 <div>
+                  <div className="text-sm sm:text-base font-display font-semibold text-text-secondary">{stats.total}</div>
+                  <div className="text-[10px] sm:text-xs text-text-muted">총</div>
+                </div>
+                <div>
                   <div className="text-sm sm:text-base font-display font-semibold text-action-success">{stats.wins}</div>
                   <div className="text-[10px] sm:text-xs text-text-muted">승</div>
                 </div>

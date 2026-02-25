@@ -15,7 +15,7 @@ import GameOverModal from './GameOverModal';
 import WaitingTiles from '../guide/WaitingTiles';
 import TileRecommend from '../guide/TileRecommend';
 import ShantenDisplay from '../guide/ShantenDisplay';
-import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick } from '@/lib/sound';
+import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 import { addRecord } from '@/lib/history';
 
 interface GameTableProps {
@@ -74,6 +74,11 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     // 부로 발생
     if (prevPhaseRef.current === 'action-pending' && phase === 'discard' && turnIndex !== prevTurnRef.current) {
       playCall();
+    }
+
+    // 내 턴 시작 알림
+    if (phase === 'discard' && turnIndex === 0 && prevTurnRef.current !== 0) {
+      playTurnChange();
     }
 
     // 게임 오버
@@ -175,12 +180,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
 
       {/* 마작 테이블 */}
       <div className="absolute inset-2 sm:inset-4 md:inset-6 lg:inset-8 rounded-2xl table-bg overflow-hidden">
-        {/* 펠트 텍스처 오버레이 */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
-        />
+        {/* 펠트 텍스처: CSS의 .table-bg::before에서 처리 */}
 
         {/* === 대면 (北, 인덱스 2) === */}
         <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 sm:gap-2 z-10">

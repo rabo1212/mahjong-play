@@ -85,7 +85,11 @@ export default function TileComponent({
           {/* 메인 문자 */}
           <span
             className={`tile-char ${display.colorClass} leading-none`}
-            style={{ fontSize: s.mainFont }}
+            style={{
+              fontSize: (display.suitType === 'dragon-red' || display.suitType === 'dragon-green')
+                ? s.mainFont * 1.3
+                : s.mainFont,
+            }}
           >
             {display.mainChar}
           </span>
