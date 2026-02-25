@@ -19,15 +19,15 @@ export default function MeldDisplay({ melds, position }: MeldDisplayProps) {
       {melds.map((meld, idx) => (
         <div
           key={idx}
-          className={`flex ${isVertical ? 'flex-col' : 'flex-row'} gap-[1px]`}
+          className={`flex ${isVertical ? 'flex-col' : 'flex-row'} gap-[1px] items-end`}
         >
           {meld.tileIds.map((tileId) => (
             <TileComponent
               key={tileId}
               tileId={tileId}
               size="sm"
-              // 가져온 패는 약간 표시 (calledTile)
               highlighted={tileId === meld.calledTileId}
+              rotate={tileId === meld.calledTileId ? 90 : 0}
             />
           ))}
         </div>

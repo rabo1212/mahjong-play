@@ -61,23 +61,34 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
 
             {/* 역 목록 */}
             <div className="space-y-1 mb-4">
-              {winResult.scoring.yakuList.map(({ yaku, count }, idx) => (
-                <div key={idx} className="flex justify-between items-center px-3 py-1 rounded bg-base/50">
-                  <div>
-                    <span className="text-text-primary text-sm">{yaku.nameKo}</span>
-                    <span className="text-text-muted text-xs ml-2">{yaku.nameCn}</span>
+              {winResult.scoring.yakuList.map(({ yaku, count }, idx) => {
+                const pts = yaku.points * count;
+                const tierColor = pts >= 64 ? 'text-action-danger' :
+                  pts >= 24 ? 'text-gold' :
+                  pts >= 6 ? 'text-action-blue' : 'text-text-primary';
+                const tierBg = pts >= 64 ? 'bg-action-danger/10 border-action-danger/20' :
+                  pts >= 24 ? 'bg-gold/10 border-gold/20' :
+                  pts >= 6 ? 'bg-action-blue/10 border-action-blue/20' : 'bg-base/50 border-transparent';
+                return (
+                  <div key={idx} className={`flex justify-between items-center px-3 py-1.5 rounded border ${tierBg}`}
+                    style={{ animationDelay: `${idx * 100}ms` }}>
+                    <div>
+                      <span className="text-text-primary text-sm">{yaku.nameKo}</span>
+                      <span className="text-text-muted text-xs ml-2">{yaku.nameCn}</span>
+                    </div>
+                    <span className={`font-display font-bold ${tierColor}`}>
+                      {pts}점
+                    </span>
                   </div>
-                  <span className="font-display font-bold text-gold">
-                    {yaku.points * count}점
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* 총점 */}
             <div className="text-center py-3 border-t border-gold/20">
               <span className="text-text-secondary text-sm mr-2">총점</span>
-              <span className="font-display font-bold text-2xl text-gold">
+              <span className="font-display font-bold text-3xl text-gold"
+                style={{ textShadow: '0 0 16px rgba(212,168,75,0.4)' }}>
                 {winResult.scoring.totalPoints}점
               </span>
             </div>

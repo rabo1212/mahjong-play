@@ -35,34 +35,40 @@ export default function ActionButtons({
   if (!showActionBar && !showTsumoBar) return null;
 
   return (
-    <div className="flex items-center justify-center gap-3 py-3 animate-fade-in">
+    <div className="flex items-center justify-center gap-2 py-3 animate-fade-in">
       {/* 상대 버린 패에 대한 액션 */}
       {showActionBar && (
         <>
-          {hasChi && (
-            <button
-              className="action-btn action-btn-chi"
-              onClick={() => onAction('chi', chiAction?.tiles)}
-            >
-              치 吃
-            </button>
+          {/* 부로 그룹 */}
+          {(hasChi || hasPon || hasKan) && (
+            <div className="flex gap-2 px-2 py-1 rounded-lg bg-panel-light/40 border border-white/5">
+              {hasChi && (
+                <button
+                  className="action-btn action-btn-chi"
+                  onClick={() => onAction('chi', chiAction?.tiles)}
+                >
+                  치 吃
+                </button>
+              )}
+              {hasPon && (
+                <button
+                  className="action-btn action-btn-pon"
+                  onClick={() => onAction('pon')}
+                >
+                  펑 碰
+                </button>
+              )}
+              {hasKan && (
+                <button
+                  className="action-btn action-btn-kan"
+                  onClick={() => onAction('kan')}
+                >
+                  깡 杠
+                </button>
+              )}
+            </div>
           )}
-          {hasPon && (
-            <button
-              className="action-btn action-btn-pon"
-              onClick={() => onAction('pon')}
-            >
-              펑 碰
-            </button>
-          )}
-          {hasKan && (
-            <button
-              className="action-btn action-btn-kan"
-              onClick={() => onAction('kan')}
-            >
-              깡 杠
-            </button>
-          )}
+          {/* 화료 (분리) */}
           {hasRon && (
             <button
               className="action-btn action-btn-win"

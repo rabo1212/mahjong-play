@@ -45,7 +45,9 @@ export default function ShantenDisplay({ hand, drawnTile, meldCount }: ShantenDi
   };
 
   return (
-    <div className={`text-[10px] font-display ${label.color} px-2 py-0.5 rounded-full bg-panel/60`}>
+    <div className={`text-[10px] font-display ${label.color} px-2 py-0.5 rounded-full bg-panel/60 ${
+      shanten === 0 ? 'animate-pulse-gold' : ''
+    }`}>
       {label.text}
     </div>
   );

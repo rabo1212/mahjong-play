@@ -12,6 +12,7 @@ import MeldDisplay from './MeldDisplay';
 import ActionButtons from './ActionButtons';
 import TurnIndicator from './TurnIndicator';
 import GameOverModal from './GameOverModal';
+import ActionPopup from './ActionPopup';
 import WaitingTiles from '../guide/WaitingTiles';
 import TileRecommend from '../guide/TileRecommend';
 import ShantenDisplay from '../guide/ShantenDisplay';
@@ -25,6 +26,8 @@ interface GameTableProps {
 export default function GameTable({ onBackToMenu }: GameTableProps) {
   const [selectedTile, setSelectedTile] = useState<TileId | null>(null);
   const [recorded, setRecorded] = useState(false);
+  const [actionPopup, setActionPopup] = useState<{ action: string; playerId: number } | null>(null);
+  const actionPopupKeyRef = useRef(0);
 
   // 게임 상태
   const phase = useGameStore(s => s.phase);
@@ -71,9 +74,17 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
       playTilePlace();
     }
 
-    // 부로 발생
+    // 부로 발생 (AI 또는 플레이어가 치/펑/깡)
     if (prevPhaseRef.current === 'action-pending' && phase === 'discard' && turnIndex !== prevTurnRef.current) {
       playCall();
+      // 부로 유형 추론: 턴이 바뀐 플레이어가 부로함
+      const callerMelds = players[turnIndex]?.melds;
+      if (callerMelds && callerMelds.length > 0) {
+        const lastMeld = callerMelds[callerMelds.length - 1];
+        const meldAction = lastMeld.type === 'chi' ? 'chi' : lastMeld.type === 'pon' ? 'pon' : 'kan';
+        actionPopupKeyRef.current++;
+        setActionPopup({ action: meldAction, playerId: turnIndex });
+      }
     }
 
     // 내 턴 시작 알림
@@ -85,6 +96,8 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     if (phase === 'game-over' && prevPhaseRef.current !== 'game-over') {
       if (winner !== null) {
         playWin();
+        actionPopupKeyRef.current++;
+        setActionPopup({ action: 'win', playerId: winner });
       } else {
         playDraw();
       }
@@ -262,6 +275,15 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
             />
           </div>
         </div>
+
+        {/* === 액션 팝업 ("퐁!", "치!" 등) === */}
+        {actionPopup && (
+          <ActionPopup
+            key={actionPopupKeyRef.current}
+            action={actionPopup.action}
+            playerId={actionPopup.playerId}
+          />
+        )}
 
         {/* === 내 꽃패 === */}
         {myPlayer.flowers.length > 0 && (
