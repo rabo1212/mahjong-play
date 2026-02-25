@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthStore>()(
 
       signOut: async () => {
         await supabase.auth.signOut();
-        set({ userId: null, isAuthenticated: false });
+        set({ userId: null, nickname: '플레이어', isAuthenticated: false });
       },
     }),
     {
