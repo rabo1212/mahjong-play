@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TileKind } from '@/engine/types';
 
 interface TurnIndicatorProps {
@@ -8,6 +8,10 @@ interface TurnIndicatorProps {
   turnIndex: number;
   wallCount: number;
   turnCount: number;
+  /** 온라인 대국: 턴 마감 시각 (ms timestamp) */
+  turnDeadline?: number | null;
+  /** 타이머 만료 시 콜백 */
+  onTimeout?: () => void;
 }
 
 const WIND_CHARS: Record<number, string> = { 41: '東', 42: '南', 43: '西', 44: '北' };
@@ -36,8 +40,40 @@ export default function TurnIndicator({
   roundWind,
   turnIndex,
   wallCount,
+  turnDeadline,
+  onTimeout,
 }: TurnIndicatorProps) {
   const progress = Math.max(0, Math.min(100, (wallCount / INITIAL_WALL) * 100));
+
+  // 카운트다운 타이머
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const timeoutFiredRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!turnDeadline) {
+      setRemaining(null);
+      timeoutFiredRef.current = false;
+      return;
+    }
+
+    timeoutFiredRef.current = false;
+
+    const tick = () => {
+      const left = Math.max(0, turnDeadline - Date.now());
+      setRemaining(Math.ceil(left / 1000));
+
+      if (left <= 0 && !timeoutFiredRef.current) {
+        timeoutFiredRef.current = true;
+        onTimeout?.();
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [turnDeadline, onTimeout]);
+
+  const isUrgent = remaining !== null && remaining <= 5;
 
   return (
     <div className="table-center w-[72px] h-[72px] sm:w-[100px] sm:h-[100px] rounded-lg flex flex-col items-center justify-center
@@ -51,11 +87,20 @@ export default function TurnIndicator({
       <div className="flex items-center gap-2 sm:gap-3">
         <SeatLabel idx={3} turnIndex={turnIndex} />
         <div className="flex flex-col items-center">
-          <span className="text-base sm:text-lg font-tile text-gold font-bold">
-            {WIND_CHARS[roundWind]}
-          </span>
+          {/* 타이머 표시 (deadline이 있을 때만) */}
+          {remaining !== null ? (
+            <span className={`text-base sm:text-lg font-display font-bold tabular-nums transition-colors ${
+              isUrgent ? 'text-action-danger animate-pulse' : 'text-gold'
+            }`}>
+              {remaining}
+            </span>
+          ) : (
+            <span className="text-base sm:text-lg font-tile text-gold font-bold">
+              {WIND_CHARS[roundWind]}
+            </span>
+          )}
           <span className="text-[9px] sm:text-[10px] font-display text-text-secondary tabular-nums">
-            {wallCount}
+            {remaining !== null ? WIND_CHARS[roundWind] : wallCount}
           </span>
         </div>
         <SeatLabel idx={1} turnIndex={turnIndex} />

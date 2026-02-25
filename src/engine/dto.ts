@@ -43,6 +43,8 @@ export interface GameStateDTO {
   canTsumo: boolean;
   /** 내가 이미 응답 수집 완료했는지 (다른 플레이어 대기 중) */
   myResponseCollected: boolean;
+  /** 현재 턴 남은 밀리초 (null=타이머 없음, 클라이언트에서 Date.now()+값으로 deadline 계산) */
+  turnRemainingMs: number | null;
 }
 
 /** GameState → DTO (서버 → 클라이언트) */
@@ -97,5 +99,8 @@ export function serializeGameState(state: GameState, forPlayerId?: number): Game
       && checkTsumoWin(state),
     myResponseCollected: forPlayerId !== undefined
       && (state.collectedResponses || []).some(r => r.playerId === forPlayerId),
+    turnRemainingMs: state.turnDeadline
+      ? Math.max(0, state.turnDeadline - Date.now())
+      : null,
   };
 }

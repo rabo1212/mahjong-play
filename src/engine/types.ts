@@ -133,4 +133,6 @@ export interface GameState {
   } | null;
   difficulty: Difficulty;
   beginnerMode: boolean;       // 8점 제한 해제
+  /** 온라인 대국: 현재 턴 마감 시각 (ms timestamp, null=타이머 없음) */
+  turnDeadline?: number | null;
 }

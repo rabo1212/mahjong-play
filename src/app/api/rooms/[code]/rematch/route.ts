@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAuthenticatedClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createInitialGameState, startGame } from '@/engine/game-manager';
+import { processStartAITurns } from '@/lib/ai-turn-processor';
+import type { GameState } from '@/engine/types';
 
 export async function POST(
   req: NextRequest,
@@ -77,12 +79,23 @@ export async function POST(
     }
   }
 
+  // 첫 턴이 AI이면 AI 턴 처리
+  let finalState: GameState = gameState;
+  if (finalState.players[finalState.turnIndex].isAI) {
+    finalState = processStartAITurns(finalState);
+  }
+
+  // 인간 턴이면 타이머 설정
+  if (!finalState.players[finalState.turnIndex].isAI && finalState.phase !== 'game-over') {
+    finalState.turnDeadline = Date.now() + 30_000;
+  }
+
   // game_states 덮어쓰기
   const { error: stateError } = await supabaseAdmin
     .from('mahjong_game_states')
     .upsert({
       room_id: room.id,
-      state: gameState,
+      state: finalState,
       version: 0,
     }, { onConflict: 'room_id' });
 

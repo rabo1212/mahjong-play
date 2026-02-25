@@ -23,6 +23,95 @@ import { getAnkanOptions } from '@/engine/hand';
 import type { GameState, PendingAction } from '@/engine/types';
 import type { GameAction } from '@/lib/online-types';
 
+/** 턴 타이머 설정 */
+const DISCARD_TIMEOUT_MS = 30_000;  // 버리기: 30초
+const PENDING_TIMEOUT_MS = 15_000;  // 액션 선택: 15초
+
+/** 인간 플레이어 턴이면 deadline 설정 */
+function setDeadlineIfNeeded(state: GameState): GameState {
+  if (state.phase === 'game-over') return state;
+
+  if (state.phase === 'discard' && !state.players[state.turnIndex].isAI) {
+    return { ...state, turnDeadline: Date.now() + DISCARD_TIMEOUT_MS };
+  }
+  if (state.phase === 'action-pending') {
+    const pendingPlayerIds = Array.from(new Set(state.pendingActions.map(a => a.playerId)));
+    const hasHuman = pendingPlayerIds.some(pid => !state.players[pid].isAI);
+    if (hasHuman) {
+      return { ...state, turnDeadline: Date.now() + PENDING_TIMEOUT_MS };
+    }
+  }
+  return { ...state, turnDeadline: null };
+}
+
+/** 타이머 유예 시간 (네트워크 지연 감안) */
+const GRACE_MS = 3_000;
+
+/** 만료된 턴 자동 처리 (discard: 랜덤 버리기, action-pending: 전원 스킵) */
+function processExpiredTurn(state: GameState): GameState {
+  // 유예 시간(3초) 포함해서 체크 — 네트워크 지연으로 정당한 액션이 먹히는 것 방지
+  if (!state.turnDeadline || Date.now() < state.turnDeadline + GRACE_MS) return state;
+  if (state.phase === 'game-over') return state;
+
+  if (state.phase === 'discard') {
+    const player = state.players[state.turnIndex];
+    if (player.isAI) return state;
+    // 타임아웃: 랜덤 패 버리기 (쯔모패 우선)
+    const tileToDiscard = player.drawnTile ?? player.hand[player.hand.length - 1];
+    if (tileToDiscard === null || tileToDiscard === undefined) return state;
+    return doDiscard(state, tileToDiscard);
+  }
+
+  if (state.phase === 'action-pending') {
+    // 타임아웃: 응답 안 한 인간 플레이어 전원 스킵 + collectedResponses 정리
+    const responses = state.collectedResponses || [];
+    let newState: GameState = { ...state, collectedResponses: [...responses] };
+    const pendingPlayerIds = Array.from(new Set(state.pendingActions.map(a => a.playerId)));
+    for (const pid of pendingPlayerIds) {
+      if (state.players[pid].isAI) continue;
+      if (responses.some(r => r.playerId === pid)) continue;
+      // 스킵 처리: pending에서 제거
+      newState = {
+        ...newState,
+        pendingActions: newState.pendingActions.filter(a => a.playerId !== pid),
+      };
+    }
+    return tryResolveCollected(newState);
+  }
+
+  return state;
+}
+
+/** 클라이언트 timeout 액션용: 유예 없이 즉시 만료 처리 */
+function forceProcessExpiredTurn(state: GameState): GameState {
+  if (state.phase === 'game-over') return state;
+
+  if (state.phase === 'discard') {
+    const player = state.players[state.turnIndex];
+    if (player.isAI) return state;
+    const tileToDiscard = player.drawnTile ?? player.hand[player.hand.length - 1];
+    if (tileToDiscard === null || tileToDiscard === undefined) return state;
+    return doDiscard(state, tileToDiscard);
+  }
+
+  if (state.phase === 'action-pending') {
+    const responses = state.collectedResponses || [];
+    let newState: GameState = { ...state, collectedResponses: [...responses] };
+    const pendingPlayerIds = Array.from(new Set(state.pendingActions.map(a => a.playerId)));
+    for (const pid of pendingPlayerIds) {
+      if (state.players[pid].isAI) continue;
+      if (responses.some(r => r.playerId === pid)) continue;
+      newState = {
+        ...newState,
+        pendingActions: newState.pendingActions.filter(a => a.playerId !== pid),
+      };
+    }
+    return tryResolveCollected(newState);
+  }
+
+  return state;
+}
+
 /** 기본 payload 검증 */
 function validatePayload(body: unknown): { action: GameAction; version: number } | null {
   if (!body || typeof body !== 'object') return null;
@@ -86,7 +175,13 @@ export async function POST(
     return NextResponse.json({ error: '상태가 변경되었습니다. 다시 시도해주세요.', stale: true }, { status: 409 });
   }
 
-  const originalState = gameRow.state as GameState;
+  let originalState = gameRow.state as GameState;
+
+  // 만료된 턴 자동 처리 (다른 플레이어 타임아웃)
+  const afterExpired = processExpiredTurn(originalState);
+  if (afterExpired !== originalState) {
+    originalState = processAITurns(setDeadlineIfNeeded(afterExpired));
+  }
 
   // 액션 실행
   let state = applyAction(originalState, seatIndex, action);
@@ -99,9 +194,15 @@ export async function POST(
   // AI 턴 자동 처리 (연쇄)
   state = processAITurns(state);
 
-  // 게임 오버 시 전적 반영
-  if (state.phase === 'game-over' && originalState.phase !== 'game-over') {
-    await handleGameOver(roomId, state);
+  // 턴 타이머 설정
+  state = setDeadlineIfNeeded(state);
+
+  // 게임 오버 시 turnDeadline 해제 + 전적 반영
+  if (state.phase === 'game-over') {
+    state = { ...state, turnDeadline: null };
+    if (originalState.phase !== 'game-over') {
+      await handleGameOver(roomId, state);
+    }
   }
 
   // DB 저장 — CAS로 0행 매치 감지
@@ -164,6 +265,17 @@ export async function POST(
 
 /** 플레이어 액션을 게임 상태에 적용 (무효 시 원래 state 참조 그대로 반환) */
 function applyAction(state: GameState, seatIndex: number, action: GameAction): GameState {
+  // timeout: 클라이언트가 타이머 만료를 알림 → 만료 처리
+  // discard 단계에서는 내 턴, action-pending에서는 pending에 내가 포함된 경우만 허용
+  if (action.type === 'timeout') {
+    if (state.phase === 'discard' && state.turnIndex !== seatIndex) return state;
+    if (state.phase === 'action-pending' && !state.pendingActions.some(a => a.playerId === seatIndex)) return state;
+    // timeout 액션은 유예 없이 즉시 처리 (클라이언트에서 이미 대기함)
+    if (!state.turnDeadline) return state;
+    const forceExpired = forceProcessExpiredTurn(state);
+    return forceExpired !== state ? forceExpired : state;
+  }
+
   // discard 단계 액션 (즉시 실행)
   switch (action.type) {
     case 'discard': {

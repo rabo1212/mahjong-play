@@ -12,7 +12,8 @@ export type GameAction =
   | { type: 'kakan'; meldIndex: number }
   | { type: 'tsumo' }
   | { type: 'ron' }
-  | { type: 'skip' };
+  | { type: 'skip' }
+  | { type: 'timeout' };
 
 /** 방 참가자 정보 */
 export interface RoomPlayer {

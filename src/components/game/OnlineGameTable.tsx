@@ -153,7 +153,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
       }
     }
     setSelectedTile(null);
-  }, [actionPending, sendAction, soundEnabled, handleInteraction]);
+  }, [actionPending, sendAction, soundEnabled, handleInteraction, gameState?.phase]);
 
   const handleSkip = useCallback(() => {
     handleInteraction();
@@ -186,6 +186,17 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
       setRematchLoading(false);
     }
   }, [roomCode, rematchLoading]);
+
+  // 턴 타이머 만료 → 서버에 timeout 전송 (ref로 안정화)
+  const sendActionRef = useRef(sendAction);
+  sendActionRef.current = sendAction;
+  const actionPendingRef = useRef(actionPending);
+  actionPendingRef.current = actionPending;
+
+  const handleTimeout = useCallback(() => {
+    if (actionPendingRef.current) return;
+    sendActionRef.current({ type: 'timeout' });
+  }, []);
 
   // 로딩 중
   if (isLoading || !gameState || seatIndex === null) {
@@ -357,6 +368,10 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 turnIndex={rotatedTurnIndex}
                 wallCount={gameState.wallTileCount}
                 turnCount={gameState.turnCount}
+                turnDeadline={gameState.turnRemainingMs != null
+                  ? Date.now() + gameState.turnRemainingMs
+                  : null}
+                onTimeout={handleTimeout}
               />
               <DiscardPool
                 discards={rightPlayer.discards}
