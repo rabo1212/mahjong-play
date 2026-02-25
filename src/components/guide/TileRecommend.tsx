@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { TileId } from '@/engine/types';
-import { toKinds } from '@/engine/tiles';
+import { TileId, TileKind } from '@/engine/types';
+import { toKinds, getTile } from '@/engine/tiles';
 import { evaluateDiscards } from '@/ai/shanten';
 import { getTileDisplayInfo } from '@/lib/tile-display';
 
@@ -12,6 +12,7 @@ interface TileRecommendProps {
   meldCount: number;
   isMyTurn: boolean;
   phase: string;
+  onTileSelect?: (tileId: TileId) => void;
 }
 
 export default function TileRecommend({
@@ -20,6 +21,7 @@ export default function TileRecommend({
   meldCount,
   isMyTurn,
   phase,
+  onTileSelect,
 }: TileRecommendProps) {
   const recommendations = useMemo(() => {
     if (!isMyTurn || phase !== 'discard' || drawnTile === null) return [];
@@ -28,17 +30,21 @@ export default function TileRecommend({
     const kinds = toKinds(allTileIds);
     const evals = evaluateDiscards(kinds, meldCount);
 
-    // 향청수 정렬 (낮을수록 좋음)
     evals.sort((a, b) => a.shanten - b.shanten);
     if (evals.length === 0) return [];
 
     const bestShanten = evals[0].shanten;
 
-    // 최적 버림패 kind 목록
     return evals
       .filter(e => e.shanten === bestShanten)
       .map(e => e.kind);
   }, [hand, drawnTile, meldCount, isMyTurn, phase]);
+
+  // kind → 해당하는 tileId 매핑 (클릭으로 자동 선택)
+  const findTileIdForKind = (kind: TileKind): TileId | null => {
+    const allIds = drawnTile !== null ? [...hand, drawnTile] : hand;
+    return allIds.find(id => getTile(id).kind === kind) ?? null;
+  };
 
   if (recommendations.length === 0) return null;
 
@@ -48,12 +54,15 @@ export default function TileRecommend({
       <div className="flex gap-1">
         {recommendations.slice(0, 5).map(kind => {
           const info = getTileDisplayInfo(kind);
+          const tileId = findTileIdForKind(kind);
           return (
             <div
               key={kind}
-              className="inline-flex items-center justify-center rounded
+              className={`inline-flex items-center justify-center rounded
                 bg-tile-face/90 border border-action-chi/30
-                min-w-[20px] h-[26px] px-1"
+                min-w-[20px] h-[26px] px-1
+                ${onTileSelect && tileId !== null ? 'cursor-pointer hover:border-action-chi/60 hover:bg-tile-face transition-colors' : ''}`}
+              onClick={onTileSelect && tileId !== null ? () => onTileSelect(tileId) : undefined}
             >
               <span className={`text-xs font-tile font-bold ${info.colorClass}`}>
                 {info.mainChar}

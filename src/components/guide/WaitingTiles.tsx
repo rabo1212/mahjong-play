@@ -21,11 +21,15 @@ export default function WaitingTiles({ hand, meldCount }: WaitingTilesProps) {
   const waiting = getWaitingTiles(handKinds, meldCount);
   if (waiting.length === 0) return null;
 
+  const MAX_DISPLAY = 8;
+  const shown = waiting.slice(0, MAX_DISPLAY);
+  const overflow = waiting.length - MAX_DISPLAY;
+
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gold/10 border border-gold/20">
       <span className="text-[10px] text-gold font-display whitespace-nowrap">대기</span>
       <div className="flex gap-1">
-        {waiting.map(kind => {
+        {shown.map(kind => {
           const info = getTileDisplayInfo(kind);
           return (
             <div
@@ -45,6 +49,11 @@ export default function WaitingTiles({ hand, meldCount }: WaitingTilesProps) {
             </div>
           );
         })}
+        {overflow > 0 && (
+          <span className="text-[10px] text-gold font-display self-center">
+            +{overflow}
+          </span>
+        )}
       </div>
       <span className="text-[10px] text-text-muted">
         {waiting.length}종

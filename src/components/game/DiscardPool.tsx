@@ -14,6 +14,9 @@ export default function DiscardPool({ discards, lastDiscard, position }: Discard
   const isVertical = position === 'left' || position === 'right';
   const tileSize = 'sm';
 
+  // 최근 3장은 미세 강조
+  const recentStart = Math.max(0, discards.length - 3);
+
   return (
     <div
       className={`grid gap-[2px] ${
@@ -25,15 +28,19 @@ export default function DiscardPool({ discards, lastDiscard, position }: Discard
         maxWidth: isVertical ? 105 : 204,
       }}
     >
-      {discards.map((tileId) => (
-        <div key={tileId} className={tileId === lastDiscard ? 'last-discard animate-tile-enter' : ''}>
-          <TileComponent
-            tileId={tileId}
-            size={tileSize}
-            highlighted={tileId === lastDiscard}
-          />
-        </div>
-      ))}
+      {discards.map((tileId, idx) => {
+        const isLast = tileId === lastDiscard;
+        const isRecent = idx >= recentStart && !isLast;
+        return (
+          <div key={tileId} className={`${isLast ? 'last-discard animate-tile-enter' : ''} ${isRecent ? 'opacity-95' : idx < recentStart ? 'opacity-70' : ''}`}>
+            <TileComponent
+              tileId={tileId}
+              size={tileSize}
+              highlighted={isLast}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

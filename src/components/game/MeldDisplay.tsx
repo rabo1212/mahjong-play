@@ -15,11 +15,12 @@ export default function MeldDisplay({ melds, position }: MeldDisplayProps) {
   const isVertical = position === 'left' || position === 'right';
 
   return (
-    <div className={`flex ${isVertical ? 'flex-col' : 'flex-row'} gap-2`}>
+    <div className={`flex ${isVertical ? 'flex-col' : 'flex-row'} gap-1`}>
       {melds.map((meld, idx) => (
         <div
           key={idx}
-          className={`flex ${isVertical ? 'flex-col' : 'flex-row'} gap-[1px] items-end`}
+          className={`flex ${isVertical ? 'flex-col' : 'flex-row'} gap-[1px] items-end
+            ${idx > 0 ? (isVertical ? 'border-t border-white/10 pt-1' : 'border-l border-white/10 pl-1') : ''}`}
         >
           {meld.tileIds.map((tileId) => (
             <TileComponent

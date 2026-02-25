@@ -47,7 +47,7 @@ export default function ActionButtons({
                   className="action-btn action-btn-chi"
                   onClick={() => onAction('chi', chiAction?.tiles)}
                 >
-                  치 吃
+                  치 <span className="font-tile text-[17px]">吃</span>
                 </button>
               )}
               {hasPon && (
@@ -55,7 +55,7 @@ export default function ActionButtons({
                   className="action-btn action-btn-pon"
                   onClick={() => onAction('pon')}
                 >
-                  펑 碰
+                  펑 <span className="font-tile text-[17px]">碰</span>
                 </button>
               )}
               {hasKan && (
@@ -63,7 +63,7 @@ export default function ActionButtons({
                   className="action-btn action-btn-kan"
                   onClick={() => onAction('kan')}
                 >
-                  깡 杠
+                  깡 <span className="font-tile text-[17px]">杠</span>
                 </button>
               )}
             </div>
@@ -74,7 +74,7 @@ export default function ActionButtons({
               className="action-btn action-btn-win"
               onClick={() => onAction('win')}
             >
-              화료 和
+              화료 <span className="font-tile text-[17px]">和</span>
             </button>
           )}
           <button
@@ -94,7 +94,7 @@ export default function ActionButtons({
               className="action-btn action-btn-win"
               onClick={() => onAction('win')}
             >
-              쯔모 自摸
+              쯔모 <span className="font-tile text-[17px]">自摸</span>
             </button>
           )}
           {ankanOptions.map(kind => (
@@ -103,7 +103,7 @@ export default function ActionButtons({
               className="action-btn action-btn-kan"
               onClick={() => onAction('ankan', [kind])}
             >
-              암깡 暗杠
+              암깡 <span className="font-tile text-[17px]">暗杠</span>
             </button>
           ))}
         </>

@@ -330,6 +330,10 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
                 meldCount={myPlayer.melds.length}
                 isMyTurn={isMyTurn}
                 phase={phase}
+                onTileSelect={(tileId) => {
+                  if (soundEnabled) playClick();
+                  setSelectedTile(tileId);
+                }}
               />
             </div>
           )}
@@ -365,9 +369,14 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
 
           {/* 안내 메시지 */}
           <div className="text-center text-[10px] sm:text-xs text-text-muted pb-1 sm:pb-2">
-            {phase === 'discard' && isMyTurn && '패를 클릭해서 선택 → 다시 클릭하면 버리기'}
+            {phase === 'discard' && isMyTurn && '패를 클릭해서 선택 → 다시 클릭하면 버리기 (숫자키 1~9, 0=쯔모)'}
             {phase === 'action-pending' && playerActions.length > 0 && '액션을 선택하세요'}
-            {phase === 'discard' && !isMyTurn && `AI ${turnIndex} 차례...`}
+            {phase === 'discard' && !isMyTurn && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                AI {turnIndex} 차례...
+              </span>
+            )}
           </div>
         </div>
       </div>

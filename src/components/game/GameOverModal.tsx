@@ -96,13 +96,31 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
         )}
 
         {/* 버튼 */}
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center flex-wrap">
           <button
             className="action-btn action-btn-win px-8"
             onClick={onRestart}
           >
             다시하기
           </button>
+          {isPlayerWin && winResult && (
+            <button
+              className="action-btn px-6"
+              onClick={() => {
+                const yakuNames = winResult.scoring.yakuList.map(y => y.yaku.nameKo).join(', ');
+                const text = `MahjongPlay - ${winResult.scoring.totalPoints}점 화료!\n역: ${yakuNames}\nhttps://mahjong-play-rho.vercel.app`;
+                if (navigator.share) {
+                  navigator.share({ text }).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(text).then(() => {
+                    alert('클립보드에 복사되었습니다!');
+                  }).catch(() => {});
+                }
+              }}
+            >
+              결과 공유
+            </button>
+          )}
           <button
             className="action-btn action-btn-pass px-8"
             onClick={onBackToMenu}
