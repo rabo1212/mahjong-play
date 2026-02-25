@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { supabase } from '@/lib/supabase/client';
+import ProfileStatsCard from '@/components/ui/ProfileStatsCard';
 
 interface RoomListItem {
   id: string;
@@ -15,14 +16,14 @@ interface RoomListItem {
   createdAt: string;
 }
 
-interface HistoryItem {
-  id: string;
-  playedAt: string;
-  isMyWin: boolean;
-  isDraw: boolean;
-  totalPoints: number;
-  yakuList: { nameKo: string; points: number }[];
-  isTsumo: boolean;
+interface ProfileStats {
+  totalGames: number;
+  totalWins: number;
+  winRate: number;
+  avgPointsPerWin: number;
+  bestScore: number;
+  topYaku: { nameKo: string; count: number }[];
+  currentStreak: { type: 'win' | 'lose'; count: number };
 }
 
 function timeAgo(dateStr: string): string {
@@ -57,9 +58,9 @@ export default function LobbyPage() {
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [joiningRoomCode, setJoiningRoomCode] = useState<string | null>(null);
 
-  // 전적
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  // 프로필 통계
+  const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // 세션 복원
   useEffect(() => {
@@ -82,33 +83,33 @@ export default function LobbyPage() {
     }
   }, []);
 
-  // 전적 가져오기
-  const fetchHistory = useCallback(async () => {
+  // 프로필 통계 가져오기
+  const fetchProfileStats = useCallback(async () => {
     try {
-      setHistoryLoading(true);
+      setStatsLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/history', {
+      const res = await fetch('/api/profile/stats', {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       const data = await res.json();
       if (res.ok) {
-        setHistory(data.history || []);
+        setProfileStats(data.stats);
       }
     } catch {
       // 무시
     } finally {
-      setHistoryLoading(false);
+      setStatsLoading(false);
     }
   }, []);
 
-  // 로그인 후 방 목록 폴링 (10초) + 전적 1회 로드
+  // 로그인 후 방 목록 폴링 (10초) + 통계 1회 로드
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchRooms();
-    fetchHistory();
+    fetchProfileStats();
     const interval = setInterval(fetchRooms, 10_000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, fetchRooms, fetchHistory]);
+  }, [isAuthenticated, fetchRooms, fetchProfileStats]);
 
   // 닉네임 입력 후 익명 로그인
   const handleLogin = async () => {
@@ -248,9 +249,14 @@ export default function LobbyPage() {
       <p className="text-sm text-text-secondary mb-8">온라인 대전</p>
 
       {/* 유저 정보 */}
-      <div className="mb-6 text-center">
+      <div className="mb-4 text-center">
         <span className="text-xs text-text-muted">접속 중: </span>
         <span className="text-sm text-gold font-semibold">{nickname}</span>
+      </div>
+
+      {/* 프로필 통계 카드 */}
+      <div className="mb-6">
+        <ProfileStatsCard stats={profileStats} loading={statsLoading} />
       </div>
 
       <div className="bg-panel rounded-2xl border border-white/5 shadow-panel p-6 w-full max-w-sm space-y-4">
@@ -374,65 +380,6 @@ export default function LobbyPage() {
                   <div className="text-xs text-gold mt-1 animate-pulse">참가 중...</div>
                 )}
               </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 내 전적 */}
-      <div className="w-full max-w-sm mt-6">
-        <h2 className="text-sm font-semibold text-text-secondary mb-3">
-          내 전적
-        </h2>
-
-        {historyLoading ? (
-          <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
-            <p className="text-sm text-text-muted animate-pulse">불러오는 중...</p>
-          </div>
-        ) : history.length === 0 ? (
-          <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
-            <p className="text-sm text-text-muted">아직 기록이 없습니다.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {history.slice(0, 10).map((h) => (
-              <div
-                key={h.id}
-                className="bg-panel rounded-xl border border-white/5 p-3"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-bold ${
-                    h.isDraw ? 'text-text-muted' : h.isMyWin ? 'text-gold' : 'text-action-danger'
-                  }`}>
-                    {h.isDraw ? '무승부' : h.isMyWin ? '승리' : '패배'}
-                    {!h.isDraw && (
-                      <span className="text-text-muted font-normal ml-1">
-                        {h.isTsumo ? '(쯔모)' : '(론)'}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[10px] text-text-muted">
-                    {timeAgo(h.playedAt)}
-                  </span>
-                </div>
-                {!h.isDraw && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-text-secondary font-display">
-                      {h.totalPoints}점
-                    </span>
-                    {h.yakuList.slice(0, 3).map((y, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-text-muted">
-                        {y.nameKo} {y.points}
-                      </span>
-                    ))}
-                    {h.yakuList.length > 3 && (
-                      <span className="text-[10px] text-text-muted">
-                        +{h.yakuList.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
             ))}
           </div>
         )}
