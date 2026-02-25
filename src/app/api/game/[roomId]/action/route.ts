@@ -578,4 +578,34 @@ async function handleGameOver(roomId: string, state: GameState) {
       await supabaseAdmin.rpc('increment_wins', { p_id: p.player_id });
     }
   }
+
+  // 게임 기록 저장
+  await supabaseAdmin.from('mahjong_game_history').insert({
+    room_id: roomId,
+    winner_id: state.winner !== null
+      ? players.find(p => p.seat_index === state.winner)?.player_id || null
+      : null,
+    players: players.map(p => ({
+      playerId: p.player_id,
+      seatIndex: p.seat_index,
+      isAI: p.is_ai,
+      name: state.players[p.seat_index].name,
+    })),
+    result: {
+      winner: state.winner,
+      isTsumo: state.winResult?.scoring.yakuList.some(
+        (y: { yaku: { id: string } }) => y.yaku.id === 'self_drawn'
+      ) ?? false,
+      totalPoints: state.winResult?.scoring.totalPoints ?? 0,
+      yakuList: state.winResult?.scoring.yakuList.map(
+        (y: { yaku: { nameKo: string; nameCn: string; points: number }; count: number }) => ({
+          nameKo: y.yaku.nameKo,
+          nameCn: y.yaku.nameCn,
+          points: y.yaku.points * y.count,
+        })
+      ) ?? [],
+      isDraw: state.winner === null,
+    },
+    rounds: 1,
+  });
 }

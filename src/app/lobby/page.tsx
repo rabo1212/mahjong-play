@@ -15,11 +15,25 @@ interface RoomListItem {
   createdAt: string;
 }
 
+interface HistoryItem {
+  id: string;
+  playedAt: string;
+  isMyWin: boolean;
+  isDraw: boolean;
+  totalPoints: number;
+  yakuList: { nameKo: string; points: number }[];
+  isTsumo: boolean;
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (diff < 60) return '방금 전';
   const min = Math.floor(diff / 60);
-  return `${min}분 전`;
+  if (min < 60) return `${min}분 전`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour}시간 전`;
+  const day = Math.floor(hour / 24);
+  return `${day}일 전`;
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -43,6 +57,10 @@ export default function LobbyPage() {
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [joiningRoomCode, setJoiningRoomCode] = useState<string | null>(null);
 
+  // 전적
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   // 세션 복원
   useEffect(() => {
     restoreSession();
@@ -64,13 +82,33 @@ export default function LobbyPage() {
     }
   }, []);
 
-  // 로그인 후 방 목록 폴링 (10초)
+  // 전적 가져오기
+  const fetchHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/history', {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setHistory(data.history || []);
+      }
+    } catch {
+      // 무시
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  // 로그인 후 방 목록 폴링 (10초) + 전적 1회 로드
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchRooms();
+    fetchHistory();
     const interval = setInterval(fetchRooms, 10_000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, fetchRooms]);
+  }, [isAuthenticated, fetchRooms, fetchHistory]);
 
   // 닉네임 입력 후 익명 로그인
   const handleLogin = async () => {
@@ -336,6 +374,65 @@ export default function LobbyPage() {
                   <div className="text-xs text-gold mt-1 animate-pulse">참가 중...</div>
                 )}
               </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 내 전적 */}
+      <div className="w-full max-w-sm mt-6">
+        <h2 className="text-sm font-semibold text-text-secondary mb-3">
+          내 전적
+        </h2>
+
+        {historyLoading ? (
+          <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
+            <p className="text-sm text-text-muted animate-pulse">불러오는 중...</p>
+          </div>
+        ) : history.length === 0 ? (
+          <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
+            <p className="text-sm text-text-muted">아직 기록이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {history.slice(0, 10).map((h) => (
+              <div
+                key={h.id}
+                className="bg-panel rounded-xl border border-white/5 p-3"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs font-bold ${
+                    h.isDraw ? 'text-text-muted' : h.isMyWin ? 'text-gold' : 'text-action-danger'
+                  }`}>
+                    {h.isDraw ? '무승부' : h.isMyWin ? '승리' : '패배'}
+                    {!h.isDraw && (
+                      <span className="text-text-muted font-normal ml-1">
+                        {h.isTsumo ? '(쯔모)' : '(론)'}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-[10px] text-text-muted">
+                    {timeAgo(h.playedAt)}
+                  </span>
+                </div>
+                {!h.isDraw && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-text-secondary font-display">
+                      {h.totalPoints}점
+                    </span>
+                    {h.yakuList.slice(0, 3).map((y, i) => (
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-text-muted">
+                        {y.nameKo} {y.points}
+                      </span>
+                    ))}
+                    {h.yakuList.length > 3 && (
+                      <span className="text-[10px] text-text-muted">
+                        +{h.yakuList.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
