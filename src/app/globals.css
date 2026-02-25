@@ -2,26 +2,470 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* =============================================
+   MahjongPlay — 스큐어모피즘 기반 마작 테마
+   ============================================= */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* 테이블 */
+  --table-felt: #1B5E37;
+  --table-dark: #0D3B20;
+  --table-light: #237A4B;
+  --table-shadow: #0A2816;
+
+  /* UI 패널 */
+  --panel: #1A1A22;
+  --panel-light: #252530;
+  --base: #0E0E12;
+
+  /* 타일 */
+  --tile-face: #F2EADB;
+  --tile-highlight: #F8F3E8;
+  --tile-face-shadow: #D9CEBC;
+  --tile-side: #CEC3AD;
+  --tile-side-dark: #B5A991;
+  --tile-back: #1D6B42;
+
+  /* 타일 문자색 */
+  --tile-wan: #B82025;
+  --tile-pin: #1A5CAB;
+  --tile-sou: #1E7D3F;
+  --tile-honor: #1C2833;
+  --tile-dragon-red: #CC2229;
+  --tile-dragon-green: #1A7A3C;
+
+  /* 골드 액센트 */
+  --gold: #D4A84B;
+  --gold-light: #E8C66A;
+  --gold-dark: #A67C2E;
+
+  /* 액션 */
+  --action-blue: #4A9FD9;
+  --action-danger: #D94040;
+  --action-success: #3DAD5C;
+
+  /* 텍스트 */
+  --text-primary: #F0EBE0;
+  --text-secondary: #A09682;
+  --text-muted: #6B6260;
+  --text-on-tile: #2A2420;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--base);
+  margin: 0;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* 디스플레이 폰트 (영문/숫자) */
+.font-display {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* 타일 폰트 (전통 한자) */
+.font-tile {
+  font-family: 'Noto Serif TC', serif;
+}
+
+/* =============================================
+   마작 테이블 배경 (위에서 조명 비추는 느낌)
+   ============================================= */
+
+.table-bg {
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    var(--table-light) 0%,
+    var(--table-felt) 35%,
+    var(--table-dark) 70%,
+    var(--table-shadow) 100%
+  );
+}
+
+/* 펠트 텍스처 (미세한 노이즈 오버레이) */
+.table-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* =============================================
+   타일 스타일 — 실제 상아/뼈 질감
+   ============================================= */
+
+.mahjong-tile {
+  position: relative;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  /* 상아색 그라디언트 */
+  background: linear-gradient(
+    180deg,
+    var(--tile-highlight) 0%,
+    var(--tile-face) 15%,
+    #EDE4D3 85%,
+    #E5DCCB 100%
+  );
+
+  /* 입체 box-shadow */
+  box-shadow:
+    0 3px 0 0 var(--tile-side),
+    0 4px 0 0 var(--tile-side-dark),
+    0 6px 8px rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.mahjong-tile:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 3px 0 0 var(--tile-side),
+    0 4px 0 0 var(--tile-side-dark),
+    0 10px 16px rgba(0, 0, 0, 0.35),
+    0 4px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.mahjong-tile.selected {
+  transform: translateY(-12px);
+  box-shadow:
+    0 3px 0 0 var(--tile-side),
+    0 4px 0 0 var(--tile-side-dark),
+    0 14px 20px rgba(0, 0, 0, 0.4),
+    0 6px 10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 2px var(--gold),
+    0 0 12px rgba(212, 168, 75, 0.3);
+}
+
+/* 타일 뒷면 */
+.mahjong-tile-back {
+  position: relative;
+  border-radius: 4px;
+  background: linear-gradient(
+    135deg,
+    #1D6B42 0%,
+    #1A5E3A 50%,
+    #166B3A 100%
+  );
+  box-shadow:
+    0 3px 0 0 #0D4828,
+    0 4px 0 0 #0A3A1E,
+    0 6px 8px rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* 뒷면 중앙 문양 */
+.mahjong-tile-back::after {
+  content: '雀';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+/* =============================================
+   타일 문자 양각 효과
+   ============================================= */
+
+.tile-char {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tile-char-wan {
+  color: var(--tile-wan);
+  text-shadow: 0 1px 0 #D4A090, 0 -0.5px 0 #8B1519;
+}
+
+.tile-char-pin {
+  color: var(--tile-pin);
+  text-shadow: 0 1px 0 #9BB8D8, 0 -0.5px 0 #0E3D75;
+}
+
+.tile-char-sou {
+  color: var(--tile-sou);
+  text-shadow: 0 1px 0 #8BC4A0, 0 -0.5px 0 #145A2C;
+}
+
+.tile-char-wind {
+  color: var(--tile-honor);
+  text-shadow: 0 1px 0 #A0A0A0, 0 -0.5px 0 #000;
+}
+
+.tile-char-dragon-red {
+  color: var(--tile-dragon-red);
+  text-shadow: 0 1px 0 #E08080, 0 -0.5px 0 #8B0000;
+}
+
+.tile-char-dragon-green {
+  color: var(--tile-dragon-green);
+  text-shadow: 0 1px 0 #80C4A0, 0 -0.5px 0 #0A4A1C;
+}
+
+/* 백판: 빈 사각형 */
+.tile-char-dragon-white {
+  border: 2px solid var(--tile-side);
+  border-radius: 2px;
+}
+
+/* 수트 표시 (萬/筒/索) */
+.tile-suit-label {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 400;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* =============================================
+   액션 버튼
+   ============================================= */
+
+.action-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: linear-gradient(180deg, #2A2A35 0%, #1E1E28 100%);
+  color: #D0CAC0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.action-btn:hover {
+  background: linear-gradient(180deg, #353545 0%, #282835 100%);
+  color: #F0EBE0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.action-btn-chi,
+.action-btn-pon,
+.action-btn-kan {
+  border-color: rgba(74, 159, 217, 0.3);
+  color: var(--action-blue);
+}
+
+.action-btn-chi:hover,
+.action-btn-pon:hover,
+.action-btn-kan:hover {
+  background: linear-gradient(180deg, #1A3550 0%, #152A40 100%);
+  border-color: rgba(74, 159, 217, 0.5);
+}
+
+.action-btn-win {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--text-on-tile);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 700;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 16px rgba(212, 168, 75, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.action-btn-win:hover {
+  background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 100%);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(212, 168, 75, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.action-btn-pass {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #6B6B7B;
+}
+
+.action-btn-pass:hover {
+  color: #A0A0B0;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* =============================================
+   액션 팝업 텍스트 ("퐁!", "치!" 등)
+   ============================================= */
+
+@keyframes action-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  30% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.action-popup {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: action-pop 0.6s ease-out forwards;
+}
+
+/* =============================================
+   타이머 바
+   ============================================= */
+
+@keyframes timer-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.timer-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--action-danger));
+  border-radius: 2px;
+}
+
+/* =============================================
+   유틸리티 애니메이션
+   ============================================= */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(212, 168, 75, 0); }
+}
+
+@keyframes tile-enter {
+  from { opacity: 0; transform: scale(0.8) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 1.5s ease-in-out infinite;
+}
+
+.animate-tile-enter {
+  animation: tile-enter 0.15s ease-out;
+}
+
+/* 마지막 버림패 강조 깜빡임 */
+@keyframes discard-highlight {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(212, 168, 75, 0.6), 0 0 10px rgba(212, 168, 75, 0.3); }
+  50% { box-shadow: 0 0 0 3px rgba(212, 168, 75, 0.8), 0 0 16px rgba(212, 168, 75, 0.5); }
+}
+
+.last-discard {
+  animation: discard-highlight 1s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* 테이블 중앙 장식 (중국풍 모서리) */
+.table-center {
+  position: relative;
+}
+
+.table-center::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgba(212, 168, 75, 0.15);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* =============================================
+   반응형: 모바일 타일 크기 축소
+   ============================================= */
+
+@media (max-width: 767px) {
+  .mahjong-tile, .mahjong-tile-back {
+    border-radius: 3px;
   }
+
+  .action-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* 아주 작은 화면 (iPhone SE 등) */
+@media (max-width: 374px) {
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* =============================================
+   접근성: 모션 감소 설정 존중
+   ============================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =============================================
+   모바일: 가로 회전 안내
+   ============================================= */
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .rotate-prompt {
+    display: flex !important;
+  }
+}
+
+/* =============================================
+   스크롤바 숨기기 (게임 테이블)
+   ============================================= */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
