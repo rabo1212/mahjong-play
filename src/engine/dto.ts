@@ -60,8 +60,11 @@ export function serializeGameState(state: GameState, forPlayerId?: number): Game
       name: p.name,
       seatWind: p.seatWind,
       // 다른 플레이어의 손패는 숨김 (온라인용)
+      // 단, 게임 오버 시 승자의 손패는 공개
       hand: forPlayerId !== undefined && idx !== forPlayerId
-        ? p.hand.map(() => -1)    // -1 = 비공개 타일
+        ? (state.phase === 'game-over' && state.winner === idx
+          ? [...p.hand]
+          : p.hand.map(() => -1))
         : [...p.hand],
       melds: p.melds.map(m => ({
         type: m.type,
@@ -72,7 +75,9 @@ export function serializeGameState(state: GameState, forPlayerId?: number): Game
       })),
       discards: [...p.discards],
       drawnTile: forPlayerId !== undefined && idx !== forPlayerId
-        ? (p.drawnTile !== null ? -1 : null)
+        ? (state.phase === 'game-over' && state.winner === idx
+          ? p.drawnTile
+          : (p.drawnTile !== null ? -1 : null))
         : p.drawnTile,
       flowers: [...p.flowers],
       isAI: p.isAI,

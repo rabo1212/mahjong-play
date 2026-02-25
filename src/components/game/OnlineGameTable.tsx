@@ -13,6 +13,7 @@ import ActionButtons from './ActionButtons';
 import TurnIndicator from './TurnIndicator';
 import ActionPopup from './ActionPopup';
 import ChatPanel from './ChatPanel';
+import OnlineGameOverModal from './OnlineGameOverModal';
 import { getTile } from '@/engine/tiles';
 import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 
@@ -534,44 +535,13 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
 
       {/* 게임 오버 */}
       {gameState.phase === 'game-over' && (
-        <div className="absolute inset-0 z-50 bg-base/80 flex items-center justify-center">
-          <div className="bg-panel rounded-2xl border border-white/10 shadow-panel p-6 sm:p-8 max-w-md w-full mx-4 text-center">
-            <h2 className="text-2xl font-display font-bold text-gold mb-4">
-              {gameState.winner === null ? '유국' : gameState.winner === seatIndex ? '승리!' : '패배'}
-            </h2>
-            {gameState.winResult && (
-              <div className="mb-4 text-sm text-text-secondary">
-                <p>{gameState.winResult.scoring.totalPoints}점</p>
-                <div className="flex flex-wrap gap-1 justify-center mt-2">
-                  {gameState.winResult.scoring.yakuList.map((y, i) => (
-                    <span key={i} className="text-xs bg-gold/10 text-gold px-2 py-0.5 rounded">
-                      {y.yaku.nameKo} ({y.yaku.points * y.count}점)
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={handleRematch}
-                disabled={rematchLoading}
-                className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer
-                  bg-gold/20 text-gold border border-gold/30
-                  hover:bg-gold/30 transition-colors disabled:opacity-50"
-              >
-                {rematchLoading ? '준비 중...' : '다시하기'}
-              </button>
-              <button
-                onClick={onBackToMenu}
-                className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer
-                  bg-panel-light text-text-secondary border border-white/5
-                  hover:border-white/10 transition-colors"
-              >
-                로비로
-              </button>
-            </div>
-          </div>
-        </div>
+        <OnlineGameOverModal
+          gameState={gameState}
+          seatIndex={seatIndex}
+          onRematch={handleRematch}
+          onBackToMenu={onBackToMenu}
+          rematchLoading={rematchLoading}
+        />
       )}
     </div>
   );
