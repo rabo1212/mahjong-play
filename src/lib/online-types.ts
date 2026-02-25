@@ -39,6 +39,26 @@ export interface RoomInfo {
   createdAt: string;
 }
 
+/** 정형문 채팅 프리셋 */
+export const PRESET_MESSAGES = [
+  '좋은 수네요',
+  '잘 두셨습니다',
+  '감사합니다',
+  '실수했다...',
+  '빨리 해주세요',
+  '잠깐만요',
+  '축하합니다!',
+  '다시 한 판!',
+] as const;
+
+/** 채팅 메시지 (브로드캐스트 전용, DB 저장 안 함) */
+export interface ChatMessage {
+  seatIndex: number;
+  nickname: string;
+  messageIndex: number; // PRESET_MESSAGES 인덱스
+  timestamp: number;
+}
+
 /** 게임 이벤트 (Realtime broadcast) */
 export type GameEvent =
   | { type: 'discard'; playerId: number; tileId: number }

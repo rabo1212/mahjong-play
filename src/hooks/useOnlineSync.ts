@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useOnlineGameStore } from '@/stores/useOnlineGameStore';
+import { PRESET_MESSAGES, type ChatMessage } from '@/lib/online-types';
 
 /** 폴링 백업 간격 (ms) — Realtime 끊겼을 때만 활성화 */
 const POLL_INTERVAL_MS = 10_000;
@@ -42,7 +43,9 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
 
     const seatIndex = store.seatIndex;
 
-    const channel = supabase.channel(`room:${roomCode}`)
+    const channel = supabase.channel(`room:${roomCode}`, {
+      config: { broadcast: { self: false } },
+    })
       // 게임 상태 broadcast
       .on('broadcast', { event: `game_state:${seatIndex}` }, (payload) => {
         const { state, version } = payload.payload;
@@ -58,6 +61,19 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
         } else if (status === 'rematch') {
           useOnlineGameStore.setState({ version: -1 });
           store.fetchState();
+        }
+      })
+      // 채팅 broadcast
+      .on('broadcast', { event: 'chat' }, (payload) => {
+        const msg = payload.payload as ChatMessage;
+        if (
+          msg &&
+          typeof msg.seatIndex === 'number' &&
+          msg.seatIndex >= 0 && msg.seatIndex <= 3 &&
+          typeof msg.messageIndex === 'number' &&
+          msg.messageIndex >= 0 && msg.messageIndex < PRESET_MESSAGES.length
+        ) {
+          store.addChatMessage(msg);
         }
       })
       // Presence: sync만으로 상태 관리 (leave와의 경합 방지, sync가 source of truth)
@@ -86,6 +102,7 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
       });
 
     channelRef.current = channel;
+    store.setRealtimeChannel(channel);
 
     // 폴링 백업: 연결 끊겼을 때 10초마다 fetchState
     const pollId = setInterval(() => {
@@ -110,6 +127,7 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
     return () => {
       channel.unsubscribe();
       channelRef.current = null;
+      store.setRealtimeChannel(null);
       clearInterval(pollId);
       document.removeEventListener('visibilitychange', handleVisibility);
     };

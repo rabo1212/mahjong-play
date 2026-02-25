@@ -12,6 +12,7 @@ import MeldDisplay from './MeldDisplay';
 import ActionButtons from './ActionButtons';
 import TurnIndicator from './TurnIndicator';
 import ActionPopup from './ActionPopup';
+import ChatPanel from './ChatPanel';
 import { getTile } from '@/engine/tiles';
 import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 
@@ -306,6 +307,9 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-base select-none" onClick={handleInteraction}>
+      {/* 채팅 패널 */}
+      <ChatPanel />
+
       {/* 가로 회전 안내 */}
       <div className="rotate-prompt hidden fixed inset-0 z-[100] bg-base/95 flex-col items-center justify-center gap-4">
         <div className="text-4xl">📱</div>

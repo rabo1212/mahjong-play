@@ -2,8 +2,9 @@
 
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { GameStateDTO } from '@/engine/dto';
-import type { GameAction } from '@/lib/online-types';
+import type { GameAction, ChatMessage } from '@/lib/online-types';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
 
@@ -23,6 +24,10 @@ interface OnlineGameStore {
   presenceReady: boolean; // Presence sync가 한 번이라도 완료됐는지
   playerPresence: Record<number, boolean>;
 
+  // Realtime 채널 참조 (채팅 전송용)
+  realtimeChannel: RealtimeChannel | null;
+  setRealtimeChannel: (ch: RealtimeChannel | null) => void;
+
   // 초기화
   init: (roomId: string, roomCode: string) => void;
   reset: () => void;
@@ -40,6 +45,14 @@ interface OnlineGameStore {
   setConnectionStatus: (status: ConnectionStatus) => void;
   updatePresence: (presenceState: Record<string, { seatIndex?: number }[]>) => void;
   handlePlayerLeave: (leftPresences: { seatIndex?: number }[]) => void;
+
+  // 채팅
+  chatMessages: ChatMessage[];
+  unreadCount: number;
+  chatOpen: boolean;
+  setChatOpen: (open: boolean) => void;
+  addChatMessage: (msg: ChatMessage, isMine?: boolean) => void;
+  resetUnread: () => void;
 }
 
 export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
@@ -54,6 +67,16 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
   connectionStatus: 'connected',
   presenceReady: false,
   playerPresence: {},
+  realtimeChannel: null,
+  chatMessages: [],
+  unreadCount: 0,
+  chatOpen: false,
+
+  setRealtimeChannel: (ch) => set({ realtimeChannel: ch }),
+  setChatOpen: (open) => {
+    set({ chatOpen: open });
+    if (open) set({ unreadCount: 0 });
+  },
 
   init: (roomId, roomCode) => {
     set({ roomId, roomCode, gameState: null, version: 0, error: null });
@@ -72,6 +95,10 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
       connectionStatus: 'connected',
       presenceReady: false,
       playerPresence: {},
+      realtimeChannel: null,
+      chatMessages: [],
+      unreadCount: 0,
+      chatOpen: false,
     });
   },
 
@@ -176,5 +203,21 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
       }
     }
     set({ playerPresence: current });
+  },
+
+  addChatMessage: (msg, isMine = false) => {
+    set((state) => {
+      const messages = [...state.chatMessages, msg];
+      if (messages.length > 20) messages.shift();
+      return {
+        chatMessages: messages,
+        // 내 메시지이거나 패널이 열려있으면 unread 증가 안 함
+        unreadCount: (isMine || state.chatOpen) ? state.unreadCount : state.unreadCount + 1,
+      };
+    });
+  },
+
+  resetUnread: () => {
+    set({ unreadCount: 0 });
   },
 }));
