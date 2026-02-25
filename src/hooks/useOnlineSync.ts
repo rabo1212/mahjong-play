@@ -30,6 +30,7 @@ export function useOnlineSync(roomId: string | null, roomCode: string | null) {
 
     return () => {
       initializedRef.current = false;
+      store.reset();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, roomCode]);

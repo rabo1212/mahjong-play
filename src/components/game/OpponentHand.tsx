@@ -1,11 +1,10 @@
 'use client';
 
 import React from 'react';
-import { PlayerState } from '@/engine/types';
 import TileComponent from './TileComponent';
 
 interface OpponentHandProps {
-  player: PlayerState;
+  player: { hand: number[]; drawnTile: number | null };
   position: 'top' | 'left' | 'right';
 }
 

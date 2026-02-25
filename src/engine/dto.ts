@@ -3,6 +3,7 @@
  * 온라인 대국 시 서버↔클라이언트 간 상태 전송용
  */
 import { GameState, DrawReason } from './types';
+import { checkTsumoWin } from './game-manager';
 
 /** 직렬화 가능한 GameState (JSON.stringify 안전) */
 export interface GameStateDTO {
@@ -38,6 +39,8 @@ export interface GameStateDTO {
   beginnerMode: boolean;
   /** 내 pendingActions만 전달 (어떤 액션 버튼을 보여줄지 판단용) */
   myPendingActions: { action: string; tiles: number[] }[];
+  /** 쯔모 가능 여부 (서버에서 판정) */
+  canTsumo: boolean;
 }
 
 /** GameState → DTO (서버 → 클라이언트) */
@@ -86,5 +89,9 @@ export function serializeGameState(state: GameState, forPlayerId?: number): Game
           .filter(a => a.playerId === forPlayerId)
           .map(a => ({ action: a.action, tiles: [...a.tiles] }))
       : [],
+    canTsumo: forPlayerId !== undefined
+      && state.phase === 'discard'
+      && state.turnIndex === forPlayerId
+      && checkTsumoWin(state),
   };
 }

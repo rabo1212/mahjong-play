@@ -35,12 +35,10 @@ export default function TileComponent({
   className = '',
   rotate = 0,
 }: TileProps) {
-  const tile = getTile(tileId);
-  const display = getTileDisplayInfo(tile.kind);
   const s = SIZES[size];
-
   const rotateStyle = rotate !== 0 ? { transform: `rotate(${rotate}deg)` } : {};
 
+  // faceDown이면 getTile 호출 불필요 (온라인 모드에서 -1 마스킹 패 방어)
   if (faceDown) {
     return (
       <div
@@ -54,6 +52,9 @@ export default function TileComponent({
       />
     );
   }
+
+  const tile = getTile(tileId);
+  const display = getTileDisplayInfo(tile.kind);
 
   return (
     <div

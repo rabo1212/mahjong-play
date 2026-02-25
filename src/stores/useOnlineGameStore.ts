@@ -76,6 +76,11 @@ export const useOnlineGameStore = create<OnlineGameStore>()((set, get) => ({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      // Realtime에서 이미 더 새로운 버전을 받았으면 무시
+      if (data.version <= get().version && get().gameState !== null) {
+        set({ isLoading: false });
+        return;
+      }
       set({
         gameState: data.state,
         version: data.version,
