@@ -1,0 +1,17 @@
+{
+  "name": "MahjongPlay - 마작플레이",
+  "short_name": "MahjongPlay",
+  "description": "중국식 마작(국표마작) 온라인 게임 — AI 연습 + 온라인 대전",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0f1a",
+  "theme_color": "#0a0f1a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

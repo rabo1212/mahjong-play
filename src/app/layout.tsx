@@ -1,9 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0a0f1a",
+};
 
 export const metadata: Metadata = {
   title: "MahjongPlay - 마작플레이",
   description: "중국식 마작(국표마작) 온라인 게임 — AI 연습 + 온라인 대전",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "MahjongPlay",
+  },
   openGraph: {
     title: "MahjongPlay - 마작플레이",
     description: "중국식 마작(국표마작) 온라인 게임 — AI 연습 + 온라인 대전",
@@ -19,6 +33,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 
