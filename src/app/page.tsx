@@ -224,6 +224,12 @@ export default function Home() {
         >
           온라인 전적
         </button>
+        <button
+          onClick={() => router.push('/yaku')}
+          className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer"
+        >
+          역 사전
+        </button>
       </div>
 
       {/* 하단 정보 */}

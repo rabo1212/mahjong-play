@@ -17,6 +17,7 @@ export default function WaitingRoomPage() {
   const [starting, setStarting] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const fetchRoom = useCallback(async () => {
     try {
@@ -132,12 +133,27 @@ export default function WaitingRoomPage() {
           대기실
         </h1>
         <p className="text-text-secondary text-sm">방 코드</p>
-        <div className="mt-2 inline-block bg-panel-light rounded-xl px-6 py-3 border border-gold/20">
+        <button
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(room.code);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch { /* 무시 */ }
+          }}
+          className="mt-2 inline-block bg-panel-light rounded-xl px-6 py-3 border border-gold/20
+            hover:border-gold/40 transition-colors cursor-pointer"
+        >
           <span className="text-3xl font-display font-bold text-gold tracking-[0.3em]">
             {room.code}
           </span>
-        </div>
-        <p className="text-[10px] text-text-muted mt-2">이 코드를 친구에게 공유하세요</p>
+        </button>
+        <p className="text-[10px] mt-2">
+          {copied
+            ? <span className="text-gold animate-fade-in">복사됨!</span>
+            : <span className="text-text-muted">코드를 탭하여 복사</span>
+          }
+        </p>
       </div>
 
       {/* 좌석 현황 */}
