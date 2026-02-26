@@ -124,12 +124,20 @@ export default function LeaderboardPage() {
       </div>
 
       {/* 하단 링크 */}
-      <button
-        onClick={() => router.push('/lobby')}
-        className="mt-6 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
-      >
-        ← 로비로 돌아가기
-      </button>
+      <div className="flex gap-4 mt-6">
+        <button
+          onClick={() => router.push('/lobby')}
+          className="text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+        >
+          &larr; 로비로
+        </button>
+        <button
+          onClick={() => router.push('/')}
+          className="text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+        >
+          &larr; 홈으로
+        </button>
+      </div>
     </main>
   );
 }
