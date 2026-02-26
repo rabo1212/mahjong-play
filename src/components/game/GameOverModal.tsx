@@ -4,6 +4,7 @@ import React from 'react';
 import { GameState } from '@/engine/types';
 import { calculateSettlement } from '@/engine/settlement';
 import TileComponent from './TileComponent';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface GameOverModalProps {
   state: GameState;
@@ -34,6 +35,9 @@ export default function GameOverModal({
   maxRounds,
   isSessionOver,
 }: GameOverModalProps) {
+  const isMobile = useIsMobile();
+  const resultTileSize = isMobile ? 'xs' : 'sm';
+
   // 동적 좌석풍 라벨
   const getSeatLabel = (idx: number) => {
     const wind = WIND_CHARS[state.players[idx]?.seatWind] || WIND_FALLBACK[idx];
@@ -131,16 +135,16 @@ export default function GameOverModal({
             {/* 화료패 표시 */}
             <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-4 flex-wrap">
               {winnerPlayer.hand.map(id => (
-                <TileComponent key={id} tileId={id} size="sm" />
+                <TileComponent key={id} tileId={id} size={resultTileSize} />
               ))}
               {isTsumo && winnerPlayer.drawnTile !== null && (
                 <div className="ml-1.5 sm:ml-2 ring-2 ring-gold rounded-sm">
-                  <TileComponent tileId={winnerPlayer.drawnTile} size="sm" />
+                  <TileComponent tileId={winnerPlayer.drawnTile} size={resultTileSize} />
                 </div>
               )}
               {!isTsumo && state.lastDiscard && (
                 <div className="ml-1.5 sm:ml-2 ring-2 ring-action-danger rounded-sm">
-                  <TileComponent tileId={state.lastDiscard.tileId} size="sm" />
+                  <TileComponent tileId={state.lastDiscard.tileId} size={resultTileSize} />
                 </div>
               )}
               {winnerPlayer.melds.length > 0 && (
@@ -148,7 +152,7 @@ export default function GameOverModal({
                   {winnerPlayer.melds.map((meld, mi) => (
                     <div key={mi} className="flex gap-[1px]">
                       {meld.tileIds.map(tid => (
-                        <TileComponent key={tid} tileId={tid} size="sm" />
+                        <TileComponent key={tid} tileId={tid} size={resultTileSize} />
                       ))}
                     </div>
                   ))}

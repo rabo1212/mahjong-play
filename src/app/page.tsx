@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Difficulty } from '@/engine/types';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import { getStats, getHistory, type GameRecord } from '@/lib/history';
+import { getStats, getHistory, clearHistory, type GameRecord } from '@/lib/history';
 
 export default function Home() {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function Home() {
   const [showLocalHistory, setShowLocalHistory] = useState(false);
   const [localHistory, setLocalHistory] = useState<GameRecord[]>([]);
   const [roomCount, setRoomCount] = useState<number | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<string>('all');
 
   useEffect(() => {
     setStats(getStats());
@@ -94,48 +95,103 @@ export default function Home() {
           </button>
 
           {/* 로컬 전적 목록 (접이식) */}
-          {showLocalHistory && localHistory.length > 0 && (
-            <div className="mt-2 space-y-1.5 max-h-[40vh] overflow-y-auto">
-              {localHistory.slice(0, 20).map((record, i) => {
-                const d = new Date(record.date);
-                const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                const resultLabel = record.result === 'draw' ? '유국' : record.result === 'win' ? '승' : '패';
-                const resultColor = record.result === 'draw'
-                  ? 'bg-white/5 text-text-muted'
-                  : record.result === 'win'
-                    ? 'bg-gold/15 text-gold'
-                    : 'bg-action-danger/15 text-action-danger';
-                const diffLabel = record.difficulty === 'easy' ? '쉬움' : record.difficulty === 'normal' ? '보통' : '어려움';
+          {showLocalHistory && (
+            <>
+              {/* 난이도 필터 */}
+              {localHistory.length > 0 && (
+                <div className="flex gap-1.5 justify-center mt-2 mb-1">
+                  {[{ key: 'all', label: '전체' }, { key: 'easy', label: '쉬움' },
+                    { key: 'normal', label: '보통' }, { key: 'hard', label: '어려움' }].map(f => (
+                    <button key={f.key}
+                      onClick={() => setHistoryFilter(f.key)}
+                      className={`px-2 py-0.5 rounded-full text-[10px] cursor-pointer transition-colors ${
+                        historyFilter === f.key
+                          ? 'bg-gold/20 text-gold border border-gold/30'
+                          : 'bg-white/5 text-text-muted border border-white/5 hover:border-white/10'
+                      }`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                return (
-                  <div key={i} className="bg-panel/60 rounded-lg border border-white/5 px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`flex-shrink-0 w-7 h-7 rounded flex items-center justify-center
-                        font-display font-bold text-[11px] ${resultColor}`}>
-                        {resultLabel}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-text-secondary">{dateStr}</span>
-                          <span className="text-[10px] px-1 rounded bg-white/5 text-text-muted">{diffLabel}</span>
-                          <span className="text-[10px] text-text-muted">{record.turns}턴</span>
-                        </div>
-                        {record.yakuNames.length > 0 && (
-                          <p className="text-[10px] text-text-secondary mt-0.5 truncate">
-                            {record.yakuNames.join(', ')}
-                          </p>
-                        )}
-                      </div>
-                      {record.score > 0 && (
-                        <span className="flex-shrink-0 font-display font-bold text-xs text-gold">
-                          {record.score}점
-                        </span>
-                      )}
+              {/* 전적 목록 */}
+              {(() => {
+                const filtered = historyFilter === 'all'
+                  ? localHistory
+                  : localHistory.filter(r => r.difficulty === historyFilter);
+                if (filtered.length === 0) {
+                  return (
+                    <div className="mt-2 text-center text-xs text-text-muted py-4">
+                      {localHistory.length === 0
+                        ? '아직 게임 기록이 없습니다. AI 대전을 시작해보세요!'
+                        : '해당 난이도의 기록이 없습니다.'}
                     </div>
+                  );
+                }
+                return (
+                  <div className="mt-2 space-y-1.5 max-h-[40vh] overflow-y-auto">
+                    {filtered.slice(0, 20).map((record, i) => {
+                      const d = new Date(record.date);
+                      const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                      const resultLabel = record.result === 'draw' ? '유국' : record.result === 'win' ? '승' : '패';
+                      const resultColor = record.result === 'draw'
+                        ? 'bg-white/5 text-text-muted'
+                        : record.result === 'win'
+                          ? 'bg-gold/15 text-gold'
+                          : 'bg-action-danger/15 text-action-danger';
+                      const diffLabel = record.difficulty === 'easy' ? '쉬움' : record.difficulty === 'normal' ? '보통' : '어려움';
+
+                      return (
+                        <div key={i} className="bg-panel/60 rounded-lg border border-white/5 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`flex-shrink-0 w-7 h-7 rounded flex items-center justify-center
+                              font-display font-bold text-[11px] ${resultColor}`}>
+                              {resultLabel}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-text-secondary">{dateStr}</span>
+                                <span className="text-[10px] px-1 rounded bg-white/5 text-text-muted">{diffLabel}</span>
+                                <span className="text-[10px] text-text-muted">{record.turns}턴</span>
+                              </div>
+                              {record.yakuNames.length > 0 && (
+                                <p className="text-[10px] text-text-secondary mt-0.5 truncate">
+                                  {record.yakuNames.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                            {record.score > 0 && (
+                              <span className="flex-shrink-0 font-display font-bold text-xs text-gold">
+                                {record.score}점
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
-              })}
-            </div>
+              })()}
+
+              {/* 기록 삭제 */}
+              {localHistory.length > 0 && (
+                <div className="text-center mt-2">
+                  <button
+                    onClick={() => {
+                      if (confirm('모든 AI 대전 기록을 삭제하시겠습니까?')) {
+                        clearHistory();
+                        setLocalHistory([]);
+                        setStats({ total: 0, wins: 0, losses: 0, draws: 0, winRate: 0, avgScore: 0 });
+                      }
+                    }}
+                    className="text-[10px] text-text-muted hover:text-action-danger transition-colors cursor-pointer"
+                  >
+                    기록 삭제
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
