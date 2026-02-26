@@ -18,6 +18,7 @@ export default function WaitingRoomPage() {
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const fetchRoom = useCallback(async () => {
     try {
@@ -154,6 +155,19 @@ export default function WaitingRoomPage() {
             : <span className="text-text-muted">코드를 탭하여 복사</span>
           }
         </p>
+        <button
+          onClick={async () => {
+            try {
+              const url = `${window.location.origin}/room/${room.code}`;
+              await navigator.clipboard.writeText(url);
+              setLinkCopied(true);
+              setTimeout(() => setLinkCopied(false), 2000);
+            } catch { /* 무시 */ }
+          }}
+          className="mt-1 text-[10px] text-action-blue hover:text-action-blue/80 transition-colors cursor-pointer"
+        >
+          {linkCopied ? '링크 복사됨!' : '초대 링크 복사'}
+        </button>
       </div>
 
       {/* 좌석 현황 */}

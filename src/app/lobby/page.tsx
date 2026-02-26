@@ -61,6 +61,7 @@ export default function LobbyPage() {
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [joiningRoomCode, setJoiningRoomCode] = useState<string | null>(null);
+  const [filterBeginner, setFilterBeginner] = useState(false);
 
   // 닉네임 변경
   const [editingNickname, setEditingNickname] = useState(false);
@@ -448,19 +449,33 @@ export default function LobbyPage() {
           <h2 className="text-sm font-semibold text-text-secondary">
             대기 중인 방
           </h2>
-          <button
-            onClick={fetchRooms}
-            disabled={roomsLoading}
-            className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer disabled:opacity-50"
-          >
-            {roomsLoading ? '새로고침 중...' : '새로고침'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFilterBeginner(!filterBeginner)}
+              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors cursor-pointer
+                ${filterBeginner
+                  ? 'bg-gold/20 text-gold border border-gold/30'
+                  : 'bg-white/5 text-text-muted border border-white/5 hover:border-white/10'
+                }`}
+            >
+              초보 방만
+            </button>
+            <button
+              onClick={fetchRooms}
+              disabled={roomsLoading}
+              className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {roomsLoading ? '새로고침 중...' : '새로고침'}
+            </button>
+          </div>
         </div>
 
-        {rooms.length === 0 ? (
+        {(() => {
+          const filteredRooms = filterBeginner ? rooms.filter(r => r.beginnerMode) : rooms;
+          return filteredRooms.length === 0 ? (
           <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
             <p className="text-sm text-text-muted">
-              대기 중인 방이 없습니다.
+              {filterBeginner ? '초보자 방이 없습니다.' : '대기 중인 방이 없습니다.'}
             </p>
             <p className="text-xs text-text-muted mt-1">
               새로 만들어보세요!
@@ -468,7 +483,7 @@ export default function LobbyPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {rooms.map((room) => (
+            {filteredRooms.map((room) => (
               <button
                 key={room.id}
                 onClick={() => handleJoinRoom(room.code)}
@@ -511,7 +526,8 @@ export default function LobbyPage() {
               </button>
             ))}
           </div>
-        )}
+        );
+        })()}
       </div>
 
       {/* 하단 링크 */}

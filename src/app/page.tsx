@@ -20,10 +20,14 @@ export default function Home() {
   const [stats, setStats] = useState({ total: 0, wins: 0, losses: 0, draws: 0, winRate: 0, avgScore: 0 });
   const [showLocalHistory, setShowLocalHistory] = useState(false);
   const [localHistory, setLocalHistory] = useState<GameRecord[]>([]);
+  const [roomCount, setRoomCount] = useState<number | null>(null);
 
   useEffect(() => {
     setStats(getStats());
     setLocalHistory(getHistory());
+    fetch('/api/rooms').then(r => r.json()).then(d => {
+      setRoomCount(d.rooms?.length ?? 0);
+    }).catch(() => {});
   }, []);
 
   const startGame = () => {
@@ -209,6 +213,11 @@ export default function Home() {
         onClick={() => router.push('/lobby')}
       >
         온라인 대전
+        {roomCount !== null && roomCount > 0 && (
+          <span className="ml-2 text-xs font-normal bg-action-blue/30 px-2 py-0.5 rounded-full">
+            {roomCount}방 대기 중
+          </span>
+        )}
       </button>
 
       {/* 네비게이션 링크 */}
