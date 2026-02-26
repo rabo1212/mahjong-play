@@ -4,6 +4,22 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MahjongPlay - 마작플레이",
   description: "중국식 마작(국표마작) 온라인 게임 — AI 연습 + 온라인 대전",
+  openGraph: {
+    title: "MahjongPlay - 마작플레이",
+    description: "중국식 마작(국표마작) 온라인 게임 — AI 연습 + 온라인 대전",
+    url: "https://mahjong-play-rho.vercel.app",
+    siteName: "MahjongPlay",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "MahjongPlay - 마작플레이",
+    description: "중국식 마작(국표마작) 온라인 게임",
+  },
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

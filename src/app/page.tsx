@@ -51,6 +51,7 @@ export default function Home() {
             className="w-full bg-panel/60 rounded-xl border border-white/5 px-4 sm:px-6 py-3 sm:py-4
               hover:border-white/10 transition-colors cursor-pointer text-left"
           >
+            <div className="text-[10px] text-text-muted text-center mb-2">AI 대전 기록</div>
             <div className="flex items-center justify-between gap-4">
               <div className="text-center">
                 <div className="text-xl sm:text-2xl font-display font-bold text-gold">{stats.winRate}%</div>
