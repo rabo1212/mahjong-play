@@ -11,6 +11,7 @@ import DiscardPool from './DiscardPool';
 import MeldDisplay from './MeldDisplay';
 import ActionButtons from './ActionButtons';
 import TurnIndicator from './TurnIndicator';
+import TileComponent from './TileComponent';
 import GameOverModal from './GameOverModal';
 import ActionPopup from './ActionPopup';
 import WaitingTiles from '../guide/WaitingTiles';
@@ -358,9 +359,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
             {myPlayer.flowers.map(id => (
               <div key={id} className="opacity-80">
                 <span className="text-[9px] sm:text-[10px] text-text-muted block text-center mb-0.5">花</span>
-                <div className="mahjong-tile flex items-center justify-center" style={{ width: 24, height: 34, fontSize: 10 }}>
-                  <span className="tile-char tile-char-dragon-red font-tile font-bold" />
-                </div>
+                <TileComponent tileId={id} size="xs" />
               </div>
             ))}
           </div>

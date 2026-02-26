@@ -64,8 +64,9 @@ export function collectPendingActions(
       actions.push({
         playerId: i,
         action: 'chi',
-        tiles: chiOptions[0], // 첫 번째 옵션 (AI가 선택 변경 가능)
+        tiles: chiOptions[0], // 기본값: 첫 번째 옵션
         priority: ACTION_PRIORITY.chi,
+        chiOptions,           // 전체 옵션 (플레이어 선택 / AI 최적화용)
       });
     }
   }

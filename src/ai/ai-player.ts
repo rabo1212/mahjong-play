@@ -107,17 +107,30 @@ function normalRespondToAction(
     if (newShanten < currentShanten) return ponAction;
   }
 
-  // 치: 향청수가 줄어드는 경우만
+  // 치: 모든 옵션 중 향청수가 가장 줄어드는 조합 선택
   const chiAction = actions.find(a => a.action === 'chi');
   if (chiAction && state.lastDiscard) {
-    const chiTileKinds = chiAction.tiles.map(id => getTile(id).kind);
-    const remaining = [...handKinds];
-    for (const ck of chiTileKinds) {
-      const idx = remaining.indexOf(ck);
-      if (idx !== -1) remaining.splice(idx, 1);
+    const options = chiAction.chiOptions ?? [chiAction.tiles];
+    let bestOption = chiAction.tiles;
+    let bestShanten = Infinity;
+
+    for (const option of options) {
+      const chiTileKinds = option.map(id => getTile(id).kind);
+      const remaining = [...handKinds];
+      for (const ck of chiTileKinds) {
+        const idx = remaining.indexOf(ck);
+        if (idx !== -1) remaining.splice(idx, 1);
+      }
+      const newShanten = calculateShanten(remaining, player.melds.length + 1);
+      if (newShanten < bestShanten) {
+        bestShanten = newShanten;
+        bestOption = option;
+      }
     }
-    const newShanten = calculateShanten(remaining, player.melds.length + 1);
-    if (newShanten < currentShanten) return chiAction;
+
+    if (bestShanten < currentShanten) {
+      return { ...chiAction, tiles: bestOption };
+    }
   }
 
   return null;
@@ -206,17 +219,30 @@ function hardRespondToAction(
     if (newShanten < currentShanten && newShanten <= 1) return ponAction;
   }
 
-  // 치: 텐파이 가까울 때만
+  // 치: 모든 옵션 중 텐파이에 가장 가까운 조합 선택
   const chiAction = actions.find(a => a.action === 'chi');
   if (chiAction) {
-    const chiTileKinds = chiAction.tiles.map(id => getTile(id).kind);
-    const remaining = [...handKinds];
-    for (const ck of chiTileKinds) {
-      const idx = remaining.indexOf(ck);
-      if (idx !== -1) remaining.splice(idx, 1);
+    const options = chiAction.chiOptions ?? [chiAction.tiles];
+    let bestOption = chiAction.tiles;
+    let bestShanten = Infinity;
+
+    for (const option of options) {
+      const chiTileKinds = option.map(id => getTile(id).kind);
+      const remaining = [...handKinds];
+      for (const ck of chiTileKinds) {
+        const idx = remaining.indexOf(ck);
+        if (idx !== -1) remaining.splice(idx, 1);
+      }
+      const newShanten = calculateShanten(remaining, player.melds.length + 1);
+      if (newShanten < bestShanten) {
+        bestShanten = newShanten;
+        bestOption = option;
+      }
     }
-    const newShanten = calculateShanten(remaining, player.melds.length + 1);
-    if (newShanten < currentShanten && newShanten <= 0) return chiAction;
+
+    if (bestShanten < currentShanten && bestShanten <= 0) {
+      return { ...chiAction, tiles: bestOption };
+    }
   }
 
   return null;

@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PendingAction, TileKind } from '@/engine/types';
+import TileComponent from './TileComponent';
 
 interface ActionButtonsProps {
   // 액션 대기 중 표시할 버튼들
@@ -25,11 +26,34 @@ export default function ActionButtons({
   onAction,
   onSkip,
 }: ActionButtonsProps) {
+  const [showChiPicker, setShowChiPicker] = useState(false);
+
   const hasChi = playerActions.some(a => a.action === 'chi');
   const hasPon = playerActions.some(a => a.action === 'pon');
   const hasKan = playerActions.some(a => a.action === 'kan');
   const hasRon = playerActions.some(a => a.action === 'win');
   const chiAction = playerActions.find(a => a.action === 'chi');
+  const chiAllOptions = chiAction?.chiOptions ?? (chiAction ? [chiAction.tiles] : []);
+
+  // 치 액션이 사라지면 팝업 닫기
+  useEffect(() => {
+    if (!hasChi) setShowChiPicker(false);
+  }, [hasChi]);
+
+  const handleChiClick = () => {
+    if (chiAllOptions.length <= 1) {
+      // 옵션 1개면 즉시 실행
+      onAction('chi', chiAction?.tiles);
+    } else {
+      // 옵션 2~3개면 선택 팝업
+      setShowChiPicker(true);
+    }
+  };
+
+  const handleChiOptionSelect = (tiles: number[]) => {
+    setShowChiPicker(false);
+    onAction('chi', tiles);
+  };
 
   const showActionBar = phase === 'action-pending' && playerActions.length > 0;
   const showTsumoBar = phase === 'discard' && isMyTurn && (canTsumo || ankanOptions.length > 0 || kakanOptions.length > 0);
@@ -43,11 +67,11 @@ export default function ActionButtons({
         <>
           {/* 부로 그룹 */}
           {(hasChi || hasPon || hasKan) && (
-            <div className="flex gap-2 px-2 py-1 rounded-lg bg-panel-light/40 border border-white/5">
+            <div className="relative flex gap-2 px-2 py-1 rounded-lg bg-panel-light/40 border border-white/5">
               {hasChi && (
                 <button
                   className="action-btn action-btn-chi"
-                  onClick={() => onAction('chi', chiAction?.tiles)}
+                  onClick={handleChiClick}
                 >
                   치 <span className="font-tile text-[17px]">吃</span>
                 </button>
@@ -67,6 +91,43 @@ export default function ActionButtons({
                 >
                   깡 <span className="font-tile text-[17px]">杠</span>
                 </button>
+              )}
+
+              {/* 치 옵션 선택 팝업 */}
+              {showChiPicker && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-[60]
+                  bg-panel rounded-xl border border-white/15 shadow-panel p-3
+                  animate-fade-in">
+                  <div className="text-[10px] text-text-muted text-center mb-2">
+                    치 조합 선택
+                  </div>
+                  <div className="flex gap-2">
+                    {chiAllOptions.map((option, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleChiOptionSelect(option)}
+                        className="flex gap-0.5 p-1.5 rounded-lg bg-white/5
+                          hover:bg-white/10 border border-white/10
+                          hover:border-gold/40 transition-all cursor-pointer"
+                      >
+                        {option.map(tileId => (
+                          <TileComponent
+                            key={tileId}
+                            tileId={tileId}
+                            size="xs"
+                          />
+                        ))}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    className="mt-2 w-full text-[10px] text-text-muted
+                      hover:text-text-secondary transition-colors cursor-pointer"
+                    onClick={() => setShowChiPicker(false)}
+                  >
+                    취소
+                  </button>
+                </div>
               )}
             </div>
           )}

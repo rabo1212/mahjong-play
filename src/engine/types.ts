@@ -63,6 +63,7 @@ export interface PendingAction {
   action: ActionType;
   tiles: TileId[];     // 사용할 손패 (치: 2장, 펑: 2장, 깡: 3장)
   priority: number;    // 높을수록 우선 (화료:100, 깡:30, 펑:20, 치:10)
+  chiOptions?: TileId[][];  // 치: 선택 가능한 모든 조합 (1~3개)
 }
 
 /** 화료 분해 결과 */

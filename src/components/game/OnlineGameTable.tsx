@@ -14,6 +14,7 @@ import ActionButtons from './ActionButtons';
 import TurnIndicator from './TurnIndicator';
 import ActionPopup from './ActionPopup';
 import ChatPanel from './ChatPanel';
+import TileComponent from './TileComponent';
 import OnlineGameOverModal from './OnlineGameOverModal';
 import ShantenDisplay from '@/components/guide/ShantenDisplay';
 import WaitingTiles from '@/components/guide/WaitingTiles';
@@ -300,6 +301,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     action: a.action as PendingAction['action'],
     tiles: a.tiles,
     priority: 0,
+    chiOptions: a.chiOptions,
   }));
 
   // 쯔모 가능 여부 (서버에서 판정)
@@ -582,9 +584,7 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
             {myPlayer.flowers.map((id) => (
               <div key={id} className="opacity-80">
                 <span className="text-[9px] sm:text-[10px] text-text-muted block text-center mb-0.5">花</span>
-                <div className="mahjong-tile flex items-center justify-center" style={{ width: 24, height: 34, fontSize: 10 }}>
-                  <span className="tile-char tile-char-dragon-red font-tile font-bold" />
-                </div>
+                <TileComponent tileId={id} size="xs" />
               </div>
             ))}
           </div>

@@ -38,7 +38,7 @@ export interface GameStateDTO {
   difficulty: string;
   beginnerMode: boolean;
   /** 내 pendingActions만 전달 (어떤 액션 버튼을 보여줄지 판단용) */
-  myPendingActions: { action: string; tiles: number[] }[];
+  myPendingActions: { action: string; tiles: number[]; chiOptions?: number[][] }[];
   /** 쯔모 가능 여부 (서버에서 판정) */
   canTsumo: boolean;
   /** 내가 이미 응답 수집 완료했는지 (다른 플레이어 대기 중) */
@@ -96,7 +96,11 @@ export function serializeGameState(state: GameState, forPlayerId?: number): Game
     myPendingActions: forPlayerId !== undefined
       ? state.pendingActions
           .filter(a => a.playerId === forPlayerId)
-          .map(a => ({ action: a.action, tiles: [...a.tiles] }))
+          .map(a => ({
+            action: a.action,
+            tiles: [...a.tiles],
+            chiOptions: a.chiOptions ? a.chiOptions.map(opt => [...opt]) : undefined,
+          }))
       : [],
     canTsumo: forPlayerId !== undefined
       && state.phase === 'discard'
