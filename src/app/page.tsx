@@ -251,6 +251,16 @@ export default function Home() {
           />
         </div>
 
+        {/* 튜토리얼 버튼 */}
+        <button
+          className="w-full py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer mb-3
+            bg-action-success/15 text-action-success border border-action-success/25
+            hover:bg-action-success/25 active:scale-[0.98]"
+          onClick={() => router.push('/tutorial')}
+        >
+          처음이라면? 튜토리얼
+        </button>
+
         {/* 시작 버튼 */}
         <button
           className="w-full py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all cursor-pointer

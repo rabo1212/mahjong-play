@@ -3,17 +3,7 @@
 import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import TileComponent from '@/components/game/TileComponent';
-
-/** TileKind → TileId 변환 (표시용) */
-function kindToDisplayId(kind: number): number {
-  const suit = Math.floor(kind / 10);
-  const num = kind % 10;
-  if (suit >= 1 && suit <= 3) return (suit - 1) * 36 + (num - 1) * 4;
-  if (suit === 4) return 108 + (num - 1) * 4;
-  if (suit === 5) return 124 + (num - 1) * 4;
-  if (suit === 6) return 136 + (num - 1);
-  return 0;
-}
+import { kindToDisplayId } from '@/lib/tile-utils';
 
 /** 패 그룹 렌더링 */
 function TileRow({ kinds, size = 'sm' }: { kinds: number[]; size?: 'xs' | 'sm' }) {
