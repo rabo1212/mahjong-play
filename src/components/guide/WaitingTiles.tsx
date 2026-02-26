@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { TileId } from '@/engine/types';
+import React, { useMemo } from 'react';
+import { TileId, TileKind } from '@/engine/types';
 import { toKinds } from '@/engine/tiles';
 import { getWaitingTiles, isTenpai } from '@/engine/win-detector';
 import { getTileDisplayInfo } from '@/lib/tile-display';
@@ -12,14 +12,35 @@ interface WaitingTilesProps {
   meldCount: number;
 }
 
-export default function WaitingTiles({ hand, meldCount }: WaitingTilesProps) {
-  // 13장 손패 (drawnTile 제외)로 대기패 계산
-  const handKinds = toKinds(hand);
+export default function WaitingTiles({ hand, drawnTile, meldCount }: WaitingTilesProps) {
+  const waiting = useMemo(() => {
+    // 13장: 직접 텐파이 확인
+    if (drawnTile === null) {
+      const handKinds = toKinds(hand);
+      if (!isTenpai(handKinds, meldCount)) return null;
+      const w = getWaitingTiles(handKinds, meldCount);
+      return w.length > 0 ? w : null;
+    }
 
-  if (!isTenpai(handKinds, meldCount)) return null;
+    // 14장: 각 패를 빼면서 최적 대기패 찾기
+    const allKinds = toKinds([...hand, drawnTile]);
+    let bestWaiting: TileKind[] = [];
 
-  const waiting = getWaitingTiles(handKinds, meldCount);
-  if (waiting.length === 0) return null;
+    for (let i = 0; i < allKinds.length; i++) {
+      const remaining = [...allKinds];
+      remaining.splice(i, 1);
+      if (isTenpai(remaining, meldCount)) {
+        const w = getWaitingTiles(remaining, meldCount);
+        if (w.length > bestWaiting.length) {
+          bestWaiting = w;
+        }
+      }
+    }
+
+    return bestWaiting.length > 0 ? bestWaiting : null;
+  }, [hand, drawnTile, meldCount]);
+
+  if (!waiting) return null;
 
   const MAX_DISPLAY = 8;
   const shown = waiting.slice(0, MAX_DISPLAY);

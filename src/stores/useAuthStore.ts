@@ -44,8 +44,7 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           set({ userId, nickname, isAuthenticated: true, isLoading: false });
-        } catch (e) {
-          console.error('Auth error:', e);
+        } catch {
           set({ isLoading: false });
         }
       },
