@@ -34,10 +34,10 @@ export default function DiscardPool({ discards, lastDiscard, position }: Discard
       style={{ maxWidth }}
     >
       {discards.map((tileId, idx) => {
-        const isLast = tileId === lastDiscard;
+        const isLast = idx === discards.length - 1 && tileId === lastDiscard;
         const isRecent = idx >= recentStart && !isLast;
         return (
-          <div key={tileId} className={`${isLast ? 'last-discard animate-tile-enter' : ''} ${isRecent ? 'opacity-95' : idx < recentStart ? 'opacity-70' : ''}`}>
+          <div key={idx} className={`${isLast ? 'last-discard animate-tile-enter' : ''} ${isRecent ? 'opacity-95' : idx < recentStart ? 'opacity-70' : ''}`}>
             <TileComponent
               tileId={tileId}
               size={tileSize}

@@ -37,19 +37,16 @@ export function useGameLoop() {
       timerRef.current = setTimeout(() => {
         aiTurn();
       }, delay);
-      return () => clearTimer();
     }
 
     // 액션 대기 중 (치/펑/깡/론)
     if (phase === 'action-pending') {
       clearTimer();
-      // AI 응답 (짧은 딜레이 후)
       const hasAiAction = pendingActions.some(a => a.playerId !== 0);
       if (hasAiAction) {
         timerRef.current = setTimeout(() => {
           aiRespondToAction();
         }, 300);
-        return () => clearTimer();
       }
     }
 
@@ -57,11 +54,8 @@ export function useGameLoop() {
     if (phase === 'draw' && turnIndex !== 0) {
       clearTimer();
       timerRef.current = setTimeout(() => {
-        // draw는 game-manager에서 자동 처리됨
-        // 혹시 여기 올 일이 있으면 aiTurn 호출
         aiTurn();
       }, 300);
-      return () => clearTimer();
     }
 
     return () => clearTimer();

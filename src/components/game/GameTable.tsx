@@ -188,7 +188,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   // 액션 버튼
   const handleAction = useCallback((action: string, tiles?: number[]) => {
     handleInteraction();
-    if (soundEnabled) playCall();
+    if (soundEnabled && action !== 'win') playCall();
 
     if (action === 'ankan' && tiles) {
       playerAnkan(tiles[0]);

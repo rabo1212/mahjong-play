@@ -26,6 +26,8 @@ export default function PlayerHand({
   // 키보드 단축키: 1~9,0 = 손패 선택, Enter = 버리기
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!interactive) return;
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
     const allTiles = drawnTile !== null ? [...hand, drawnTile] : [...hand];
 
