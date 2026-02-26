@@ -3,6 +3,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { TileId } from '@/engine/types';
 import TileComponent from './TileComponent';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface PlayerHandProps {
   hand: TileId[];
@@ -19,6 +20,9 @@ export default function PlayerHand({
   onTileClick,
   interactive,
 }: PlayerHandProps) {
+  const isMobile = useIsMobile();
+  const tileSize = isMobile ? 'sm' : 'md';
+
   // 키보드 단축키: 1~9,0 = 손패 선택, Enter = 버리기
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!interactive) return;
@@ -45,13 +49,13 @@ export default function PlayerHand({
   }, [handleKeyDown]);
 
   return (
-    <div className="flex items-end justify-center gap-[2px]">
+    <div className={`flex items-end justify-center ${isMobile ? 'gap-[1px]' : 'gap-[2px]'}`}>
       {/* 손패 */}
       {hand.map((tileId, idx) => (
         <div key={tileId} className="relative">
           <TileComponent
             tileId={tileId}
-            size="md"
+            size={tileSize}
             selected={selectedTile === tileId}
             interactive={interactive}
             onClick={onTileClick}
@@ -66,10 +70,10 @@ export default function PlayerHand({
 
       {/* 쯔모한 패 (오른쪽에 약간 떨어져서) */}
       {drawnTile !== null && (
-        <div className="ml-3 relative">
+        <div className={`${isMobile ? 'ml-1.5' : 'ml-3'} relative`}>
           <TileComponent
             tileId={drawnTile}
-            size="md"
+            size={tileSize}
             selected={selectedTile === drawnTile}
             interactive={interactive}
             onClick={onTileClick}

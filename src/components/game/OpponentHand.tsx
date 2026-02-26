@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TileComponent from './TileComponent';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface OpponentHandProps {
   player: { hand: number[]; drawnTile: number | null };
@@ -9,6 +10,8 @@ interface OpponentHandProps {
 }
 
 export default function OpponentHand({ player, position }: OpponentHandProps) {
+  const isMobile = useIsMobile();
+  const tileSize = isMobile ? 'xs' : 'sm';
   const handCount = player.hand.length;
   const tileCount = handCount + (player.drawnTile !== null ? 1 : 0);
 
@@ -28,7 +31,7 @@ export default function OpponentHand({ player, position }: OpponentHandProps) {
           <TileComponent
             key={i}
             tileId={id}
-            size="sm"
+            size={tileSize}
             faceDown
             rotate={180}
           />
@@ -45,7 +48,7 @@ export default function OpponentHand({ player, position }: OpponentHandProps) {
           <TileComponent
             key={i}
             tileId={id}
-            size="sm"
+            size={tileSize}
             faceDown
           />
         ))}

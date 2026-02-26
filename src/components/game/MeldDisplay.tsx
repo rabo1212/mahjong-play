@@ -3,6 +3,7 @@
 import React from 'react';
 import { Meld } from '@/engine/types';
 import TileComponent from './TileComponent';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface MeldDisplayProps {
   melds: Meld[];
@@ -10,6 +11,8 @@ interface MeldDisplayProps {
 }
 
 export default function MeldDisplay({ melds, position }: MeldDisplayProps) {
+  const isMobile = useIsMobile();
+  const tileSize = isMobile ? 'xs' : 'sm';
   if (melds.length === 0) return null;
 
   const isVertical = position === 'left' || position === 'right';
@@ -26,7 +29,7 @@ export default function MeldDisplay({ melds, position }: MeldDisplayProps) {
             <TileComponent
               key={tileId}
               tileId={tileId}
-              size="sm"
+              size={tileSize}
               highlighted={tileId === meld.calledTileId}
               rotate={tileId === meld.calledTileId ? 90 : 0}
             />

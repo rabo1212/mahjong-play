@@ -14,12 +14,12 @@ const ACTION_LABELS: Record<string, { text: string; color: string }> = {
   win: { text: '화료!', color: 'text-gold' },
 };
 
-/** 플레이어 인덱스에 따른 팝업 위치 */
+/** 플레이어 인덱스에 따른 팝업 위치 (모바일 대응) */
 const POSITIONS: Record<number, string> = {
-  0: 'bottom-28 left-1/2 -translate-x-1/2',
-  1: 'right-16 top-1/2 -translate-y-1/2',
-  2: 'top-16 left-1/2 -translate-x-1/2',
-  3: 'left-16 top-1/2 -translate-y-1/2',
+  0: 'bottom-20 sm:bottom-28 left-1/2 -translate-x-1/2',
+  1: 'right-8 sm:right-16 top-1/2 -translate-y-1/2',
+  2: 'top-10 sm:top-16 left-1/2 -translate-x-1/2',
+  3: 'left-8 sm:left-16 top-1/2 -translate-y-1/2',
 };
 
 export default function ActionPopup({ action, playerId }: ActionPopupProps) {
