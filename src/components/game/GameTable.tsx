@@ -154,8 +154,10 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
 
   // 세션 결과 기록 (게임 오버 시)
   const sessionRecordedRef = useRef(false);
+  const displayRoundRef = useRef<number>(0);
   useEffect(() => {
     if (phase !== 'game-over' || sessionRecordedRef.current || !session) return;
+    displayRoundRef.current = session.currentRound;
     recordResult(useGameStore.getState());
     sessionRecordedRef.current = true;
   }, [phase, session, recordResult]);
@@ -216,6 +218,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     startSession(difficulty, beginnerMode);
     setSelectedTile(null);
     setRecorded(false);
+    setShowSettings(false);
     sessionRecordedRef.current = false;
   }, [clearSession, startSession, handleInteraction]);
 
@@ -224,6 +227,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     nextRound();
     setSelectedTile(null);
     setRecorded(false);
+    setShowSettings(false);
     sessionRecordedRef.current = false;
   }, [nextRound, handleInteraction]);
 
@@ -500,7 +504,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
           onBackToMenu={() => { clearSession(); onBackToMenu(); }}
           onNextRound={session ? handleNextRound : undefined}
           sessionScores={session?.scores}
-          currentRound={session ? session.currentRound - 1 : undefined}
+          currentRound={session ? displayRoundRef.current : undefined}
           maxRounds={session?.maxRounds}
           isSessionOver={isSessionOver()}
         />

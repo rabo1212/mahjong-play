@@ -24,9 +24,9 @@ export default function TileRecommend({
   onTileSelect,
 }: TileRecommendProps) {
   const recommendations = useMemo(() => {
-    if (!isMyTurn || phase !== 'discard' || drawnTile === null) return [];
+    if (!isMyTurn || phase !== 'discard') return [];
 
-    const allTileIds = [...hand, drawnTile];
+    const allTileIds = drawnTile !== null ? [...hand, drawnTile] : [...hand];
     const kinds = toKinds(allTileIds);
     const evals = evaluateDiscards(kinds, meldCount);
 

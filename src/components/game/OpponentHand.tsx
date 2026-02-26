@@ -64,7 +64,7 @@ export default function OpponentHand({ player, position }: OpponentHandProps) {
         <TileComponent
           key={i}
           tileId={id}
-          size="sm"
+          size={tileSize}
           faceDown
         />
       ))}
