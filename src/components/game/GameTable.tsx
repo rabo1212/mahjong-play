@@ -20,18 +20,22 @@ import TileRecommend from '../guide/TileRecommend';
 import ShantenDisplay from '../guide/ShantenDisplay';
 import { resumeAudio, playTilePlace, playTileDraw, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 import { addRecord } from '@/lib/history';
+import TutorialOverlay from './TutorialOverlay';
+import TutorialCoach from './TutorialCoach';
 
 const WIND_CHARS: Record<number, string> = { 41: '東', 42: '南', 43: '西', 44: '北' };
 
 interface GameTableProps {
   onBackToMenu: () => void;
+  tutorialMode?: boolean;
 }
 
-export default function GameTable({ onBackToMenu }: GameTableProps) {
+export default function GameTable({ onBackToMenu, tutorialMode }: GameTableProps) {
   const [selectedTile, setSelectedTile] = useState<TileId | null>(null);
   const [recorded, setRecorded] = useState(false);
   const [actionPopup, setActionPopup] = useState<{ action: string; playerId: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(!!tutorialMode);
   const actionPopupKeyRef = useRef(0);
 
   // 게임 상태
@@ -494,6 +498,25 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
           </div>
         </div>
       </div>
+
+      {/* 튜토리얼: 시작 오버레이 */}
+      {showTutorial && (
+        <TutorialOverlay onComplete={() => setShowTutorial(false)} />
+      )}
+
+      {/* 튜토리얼: 실시간 코치 (오버레이 닫힌 후 게임 중) */}
+      {tutorialMode && !showTutorial && phase !== 'game-over' && (
+        <TutorialCoach
+          phase={phase}
+          isMyTurn={isMyTurn}
+          hand={myPlayer.hand}
+          drawnTile={myPlayer.drawnTile}
+          meldCount={myPlayer.melds.length}
+          playerActions={playerActions}
+          canTsumo={canTsumo}
+          turnCount={turnCount}
+        />
+      )}
 
       {/* 게임 오버 모달 */}
       {phase === 'game-over' && (

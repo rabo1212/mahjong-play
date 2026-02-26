@@ -24,9 +24,14 @@ function GameContent() {
   useEffect(() => {
     if (mode === 'online') return;
     if (phase === 'idle') {
-      const difficulty = (searchParams.get('difficulty') || 'easy') as Difficulty;
-      const beginner = searchParams.get('beginner') !== 'false';
-      startSession(difficulty, beginner);
+      // 튜토리얼 모드: easy + beginner 강제
+      if (mode === 'tutorial') {
+        startSession('easy', true);
+      } else {
+        const difficulty = (searchParams.get('difficulty') || 'easy') as Difficulty;
+        const beginner = searchParams.get('beginner') !== 'false';
+        startSession(difficulty, beginner);
+      }
     }
   }, [mode, phase, searchParams, startSession]);
 
@@ -54,6 +59,18 @@ function GameContent() {
         onBackToMenu={() => router.push('/lobby')}
       />
     );
+  }
+
+  // 튜토리얼 모드
+  if (mode === 'tutorial') {
+    if (phase === 'idle') {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-base">
+          <div className="text-text-secondary text-lg">배패 중...</div>
+        </div>
+      );
+    }
+    return <GameTable onBackToMenu={() => router.push('/')} tutorialMode />;
   }
 
   // 로컬 모드

@@ -47,16 +47,18 @@ export function createSession(difficulty: Difficulty, beginnerMode: boolean): Ga
 /** 현재 라운드 GameState 생성 */
 export function createRoundState(session: GameSession): GameState {
   const state = createInitialGameState(session.difficulty, session.beginnerMode);
+  // startGame이 players를 생성하므로 먼저 호출
+  const started = startGame({
+    ...state,
+    roundWind: 41,
+  });
   // 동풍전: 장풍은 항상 동(41)
   // 딜러(동가) 로테이션: 동1국→player[0]이 동, 동2국→player[1]이 동, ...
   const round = session.currentRound;
   for (let i = 0; i < 4; i++) {
-    state.players[i].seatWind = 41 + ((i - round + 4) % 4);
+    started.players[i].seatWind = 41 + ((i - round + 4) % 4);
   }
-  return startGame({
-    ...state,
-    roundWind: 41,
-  });
+  return started;
 }
 
 /** 라운드 결과 기록 + 점수 반영 */
