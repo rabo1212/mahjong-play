@@ -372,7 +372,6 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
                 roundWind={roundWind}
                 turnIndex={turnIndex}
                 wallCount={wallTiles.length}
-                turnCount={turnCount}
                 currentRound={session?.currentRound}
               />
 

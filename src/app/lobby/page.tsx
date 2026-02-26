@@ -139,6 +139,7 @@ export default function LobbyPage() {
     setNickChanging(false);
     if (ok) {
       setEditingNickname(false);
+      fetchProfileStats();
     } else {
       setError('닉네임 변경에 실패했습니다');
     }

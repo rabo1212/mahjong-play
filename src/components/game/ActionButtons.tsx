@@ -71,8 +71,9 @@ export default function ActionButtons({
     if (showTsumoBar) {
       if (key === 'w' && canTsumo) { onAction('win'); return; }
       if (key === 'k' && ankanOptions.length > 0) { onAction('ankan', [ankanOptions[0]]); return; }
+      if (key === 'k' && ankanOptions.length === 0 && kakanOptions.length > 0) { onAction('kakan', [kakanOptions[0]]); return; }
     }
-  }, [showActionBar, showTsumoBar, hasChi, hasPon, hasKan, hasRon, canTsumo, ankanOptions, onAction, onSkip, handleChiClick]);
+  }, [showActionBar, showTsumoBar, hasChi, hasPon, hasKan, hasRon, canTsumo, ankanOptions, kakanOptions, onAction, onSkip, handleChiClick]);
 
   useEffect(() => {
     if (!showActionBar && !showTsumoBar) return;

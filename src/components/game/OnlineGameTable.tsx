@@ -384,9 +384,12 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     ? { ...gameState.lastDiscard, playerId: (gameState.lastDiscard.playerId - seatIndex + 4) % 4 }
     : null;
 
-  // 풍패 표시 회전
+  // 풍패 표시: 서버가 보낸 실제 자풍 사용
   const windLabels = ['東', '南', '西', '北'];
-  const myWind = windLabels[(seatIndex) % 4];
+  const mySeatWind = gameState.players[seatIndex]?.seatWind;
+  const myWind = mySeatWind
+    ? windLabels[(mySeatWind - 41) % 4]
+    : windLabels[seatIndex % 4];
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-base select-none" onClick={handleInteraction}>
@@ -586,7 +589,6 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
                 roundWind={gameState.roundWind}
                 turnIndex={rotatedTurnIndex}
                 wallCount={gameState.wallTileCount}
-                turnCount={gameState.turnCount}
                 turnDeadline={memoizedDeadline}
                 onTimeout={handleTimeout}
               />

@@ -7,7 +7,6 @@ interface TurnIndicatorProps {
   roundWind: TileKind;
   turnIndex: number;
   wallCount: number;
-  turnCount: number;
   /** 현재 국 번호 (0~3, 동1국~동4국) */
   currentRound?: number;
   /** 온라인 대국: 턴 마감 시각 (ms timestamp) */
