@@ -121,6 +121,15 @@ export default function LeaderboardPage() {
             })}
           </div>
         )}
+
+        {/* 내가 랭킹에 없을 때 안내 */}
+        {!loading && entries.length > 0 && nickname && !entries.some(e => e.nickname === nickname) && (
+          <div className="px-4 py-3 border-t border-white/5 text-center">
+            <span className="text-[10px] text-text-muted">
+              내 정보가 랭킹에 없습니다. 온라인 대전 3판 이상 플레이하면 표시됩니다.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 하단 링크 */}

@@ -4,6 +4,7 @@ import React from 'react';
 import type { GameStateDTO } from '@/engine/dto';
 import { calculateSettlement } from '@/engine/settlement';
 import TileComponent from './TileComponent';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface OnlineGameOverModalProps {
   gameState: GameStateDTO;
@@ -24,6 +25,9 @@ export default function OnlineGameOverModal({
   onBackToHome,
   rematchLoading,
 }: OnlineGameOverModalProps) {
+  const isMobile = useIsMobile();
+  const resultTileSize = isMobile ? 'xs' : 'sm';
+
   const winner = gameState.winner;
   const winResult = gameState.winResult;
   const isDraw = winner === null;
@@ -106,18 +110,18 @@ export default function OnlineGameOverModal({
             <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-4 flex-wrap">
               {/* 손패 (마스킹 안 된 것만) */}
               {winnerPlayer.hand.filter(id => id >= 0).map(id => (
-                <TileComponent key={id} tileId={id} size="sm" />
+                <TileComponent key={id} tileId={id} size={resultTileSize} />
               ))}
               {/* 쯔모: drawnTile 하이라이트 */}
               {isTsumo && winnerPlayer.drawnTile !== null && winnerPlayer.drawnTile >= 0 && (
                 <div className="ml-1.5 sm:ml-2 ring-2 ring-gold rounded-sm">
-                  <TileComponent tileId={winnerPlayer.drawnTile} size="sm" />
+                  <TileComponent tileId={winnerPlayer.drawnTile} size={resultTileSize} />
                 </div>
               )}
               {/* 론: lastDiscard 하이라이트 */}
               {!isTsumo && gameState.lastDiscard && (
                 <div className="ml-1.5 sm:ml-2 ring-2 ring-action-danger rounded-sm">
-                  <TileComponent tileId={gameState.lastDiscard.tileId} size="sm" />
+                  <TileComponent tileId={gameState.lastDiscard.tileId} size={resultTileSize} />
                 </div>
               )}
               {/* 부로 면자 */}
@@ -126,7 +130,7 @@ export default function OnlineGameOverModal({
                   {winnerPlayer.melds.map((meld, mi) => (
                     <div key={mi} className="flex gap-[1px]">
                       {meld.tileIds.map(tid => (
-                        <TileComponent key={tid} tileId={tid} size="sm" />
+                        <TileComponent key={tid} tileId={tid} size={resultTileSize} />
                       ))}
                     </div>
                   ))}
