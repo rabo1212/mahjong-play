@@ -403,8 +403,8 @@ export default function GameTable({ onBackToMenu, tutorialMode }: GameTableProps
           />
         )}
 
-        {/* === 내 꽃패 === */}
-        {myPlayer.flowers.length > 0 && (
+        {/* === 내 꽃패 === (튜토리얼에서는 숨김) */}
+        {!tutorialMode && myPlayer.flowers.length > 0 && (
           <div className="absolute bottom-20 sm:bottom-24 right-2 sm:right-4 flex gap-1 z-10">
             {myPlayer.flowers.map(id => (
               <div key={id} className="opacity-80">
