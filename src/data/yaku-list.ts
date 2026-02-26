@@ -1,6 +1,6 @@
 import { Yaku } from '@/engine/types';
 
-/** MCR 20개 핵심 역 정의 */
+/** MCR 25개 역 정의 */
 export const YAKU_LIST: Record<string, Yaku> = {
   // === 88점 ===
   big_three_dragons: {
@@ -11,6 +11,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 88,
     description: '중·발·백 모두 커쯔/깡쯔',
     excludes: ['small_three_dragons', 'dragon_pung'],
+    exampleTiles: [51, 51, 51, 52, 52, 52, 53, 53, 53],
   },
   big_four_winds: {
     id: 'big_four_winds',
@@ -20,6 +21,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 88,
     description: '동·남·서·북 모두 커쯔/깡쯔',
     excludes: ['small_four_winds', 'prevalent_wind', 'seat_wind', 'pung_of_terminals_honors'],
+    exampleTiles: [41, 41, 41, 42, 42, 42, 43, 43, 43, 44, 44, 44],
   },
   all_honors: {
     id: 'all_honors',
@@ -29,6 +31,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 64,
     description: '자패(풍패+삼원패)로만 구성',
     excludes: ['all_pungs', 'pung_of_terminals_honors'],
+    exampleTiles: [41, 41, 41, 43, 43, 43, 51, 51, 51, 52, 52, 52, 44, 44],
   },
   nine_gates: {
     id: 'nine_gates',
@@ -38,6 +41,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 88,
     description: '한 수트로 1112345678999 + 아무 패 1장',
     excludes: ['full_flush', 'concealed_hand'],
+    exampleTiles: [11, 11, 11, 12, 13, 14, 15, 16, 17, 18, 19, 19, 19, 15],
   },
   thirteen_orphans: {
     id: 'thirteen_orphans',
@@ -47,6 +51,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 88,
     description: '13종 요구패 + 아무 요구패 1장 중복',
     excludes: ['concealed_hand', 'all_types'],
+    exampleTiles: [11, 19, 21, 29, 31, 39, 41, 42, 43, 44, 51, 52, 53, 11],
   },
 
   // === 64점 ===
@@ -58,6 +63,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 64,
     description: '삼원패 중 2개 커쯔 + 1개 머리',
     excludes: ['dragon_pung'],
+    exampleTiles: [51, 51, 51, 52, 52, 52, 53, 53],
   },
   small_four_winds: {
     id: 'small_four_winds',
@@ -67,6 +73,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 64,
     description: '풍패 중 3개 커쯔 + 1개 머리',
     excludes: ['prevalent_wind', 'seat_wind'],
+    exampleTiles: [41, 41, 41, 42, 42, 42, 43, 43, 43, 44, 44],
   },
   four_concealed_pungs: {
     id: 'four_concealed_pungs',
@@ -76,6 +83,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 64,
     description: '4개 암각 (부로 없이 커쯔 4개)',
     excludes: ['concealed_hand', 'all_pungs'],
+    exampleTiles: [11, 11, 11, 25, 25, 25, 33, 33, 33, 44, 44, 44],
   },
 
   // === 24점 ===
@@ -87,6 +95,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 24,
     description: '7개의 대자(쌍)',
     excludes: ['concealed_hand'],
+    exampleTiles: [11, 11, 14, 14, 23, 23, 27, 27, 35, 35, 41, 41, 51, 51],
   },
   full_flush: {
     id: 'full_flush',
@@ -96,6 +105,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 24,
     description: '한 종류 수패로만 구성',
     excludes: ['half_flush'],
+    exampleTiles: [21, 22, 23, 24, 25, 26, 27, 27, 27, 28, 28, 29, 29, 29],
   },
 
   // === 16점 ===
@@ -107,6 +117,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 16,
     description: '부로 없이 커쯔 3개',
     excludes: [],
+    exampleTiles: [12, 12, 12, 26, 26, 26, 39, 39, 39],
   },
   pure_straight: {
     id: 'pure_straight',
@@ -116,6 +127,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 16,
     description: '같은 수트로 123+456+789',
     excludes: [],
+    exampleTiles: [11, 12, 13, 14, 15, 16, 17, 18, 19],
   },
 
   // === 6점 ===
@@ -127,6 +139,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 6,
     description: '한 종류 수패 + 자패',
     excludes: [],
+    exampleTiles: [31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 41, 41],
   },
 
   // === 2점 ===
@@ -138,6 +151,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 2,
     description: '장풍과 같은 풍패 커쯔',
     excludes: [],
+    exampleTiles: [41, 41, 41],
   },
   seat_wind: {
     id: 'seat_wind',
@@ -147,6 +161,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 2,
     description: '자풍과 같은 풍패 커쯔',
     excludes: [],
+    exampleTiles: [42, 42, 42],
   },
 
   // === 2점 ===
@@ -158,6 +173,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 2,
     description: '4개 순자 + 수패 머리, 자패 없음',
     excludes: [],
+    exampleTiles: [11, 12, 13, 24, 25, 26, 31, 32, 33, 17, 18, 19, 15, 15],
   },
   all_simples: {
     id: 'all_simples',
@@ -167,6 +183,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 2,
     description: '노두패(1,9)와 자패 없이 2~8로만 구성',
     excludes: [],
+    exampleTiles: [12, 13, 14, 25, 26, 27, 33, 34, 35, 36, 37, 38, 24, 24],
   },
   concealed_hand: {
     id: 'concealed_hand',
@@ -185,6 +202,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 6,
     description: '4개 모두 커쯔/깡쯔',
     excludes: [],
+    exampleTiles: [13, 13, 13, 27, 27, 27, 35, 35, 35, 41, 41, 41, 19, 19],
   },
 
   // === 1점 ===
@@ -232,6 +250,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 1,
     description: '꽃패 1장당 1점',
     excludes: [],
+    exampleTiles: [61, 62, 63, 64, 65, 66, 67, 68],
   },
   dragon_pung: {
     id: 'dragon_pung',
@@ -241,6 +260,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     points: 2,
     description: '삼원패(중/발/백) 커쯔',
     excludes: [],
+    exampleTiles: [51, 51, 51],
   },
 };
 

@@ -100,6 +100,7 @@ export interface Yaku {
   points: number;
   description: string;
   excludes: string[];   // 이 역 성립 시 제외되는 하위역 ID들
+  exampleTiles?: number[];  // 예시 패 (TileKind 배열, 가이드 표시용)
 }
 
 /** 점수 계산 결과 */
