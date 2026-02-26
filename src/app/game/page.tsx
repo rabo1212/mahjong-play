@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useGameStore } from '@/stores/useGameStore';
+import { useSessionStore } from '@/stores/useSessionStore';
 import { Difficulty } from '@/engine/types';
 import GameTable from '@/components/game/GameTable';
 import OnlineGameTable from '@/components/game/OnlineGameTable';
@@ -16,18 +17,18 @@ function GameContent() {
   const roomId = searchParams.get('roomId');
   const roomCode = searchParams.get('code');
 
-  // 로컬 모드
-  const initGame = useGameStore(s => s.initGame);
+  // 로컬 모드: 세션 기반 초기화
   const phase = useGameStore(s => s.phase);
+  const startSession = useSessionStore(s => s.startSession);
 
   useEffect(() => {
-    if (mode === 'online') return; // 온라인 모드에서는 로컬 게임 초기화 안 함
+    if (mode === 'online') return;
     if (phase === 'idle') {
       const difficulty = (searchParams.get('difficulty') || 'easy') as Difficulty;
       const beginner = searchParams.get('beginner') !== 'false';
-      initGame(difficulty, beginner);
+      startSession(difficulty, beginner);
     }
-  }, [mode, phase, searchParams, initGame]);
+  }, [mode, phase, searchParams, startSession]);
 
   // 온라인 모드: 필수 파라미터 누락 시 로비로 리다이렉트
   if (mode === 'online' && (!roomId || !roomCode)) {

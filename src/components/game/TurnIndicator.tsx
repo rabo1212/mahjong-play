@@ -8,6 +8,8 @@ interface TurnIndicatorProps {
   turnIndex: number;
   wallCount: number;
   turnCount: number;
+  /** 현재 국 번호 (0~3, 동1국~동4국) */
+  currentRound?: number;
   /** 온라인 대국: 턴 마감 시각 (ms timestamp) */
   turnDeadline?: number | null;
   /** 타이머 만료 시 콜백 */
@@ -40,10 +42,17 @@ export default function TurnIndicator({
   roundWind,
   turnIndex,
   wallCount,
+  currentRound,
   turnDeadline,
   onTimeout,
 }: TurnIndicatorProps) {
   const progress = Math.max(0, Math.min(100, (wallCount / INITIAL_WALL) * 100));
+
+  // 국번호 라벨 (東1局~東4局)
+  const windChar = WIND_CHARS[roundWind] || '東';
+  const roundLabel = currentRound !== undefined
+    ? `${windChar}${currentRound + 1}局`
+    : windChar;
 
   // 카운트다운 타이머
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -95,12 +104,14 @@ export default function TurnIndicator({
               {remaining}
             </span>
           ) : (
-            <span className="text-base sm:text-lg font-tile text-gold font-bold">
-              {WIND_CHARS[roundWind]}
+            <span className={`font-tile text-gold font-bold leading-tight ${
+              currentRound !== undefined ? 'text-[10px] sm:text-xs' : 'text-base sm:text-lg'
+            }`}>
+              {roundLabel}
             </span>
           )}
           <span className="text-[9px] sm:text-[10px] font-display text-text-secondary tabular-nums">
-            {remaining !== null ? WIND_CHARS[roundWind] : wallCount}
+            {remaining !== null ? roundLabel : wallCount}
           </span>
         </div>
         <SeatLabel idx={1} turnIndex={turnIndex} />

@@ -9,11 +9,31 @@ interface GameOverModalProps {
   state: GameState;
   onRestart: () => void;
   onBackToMenu: () => void;
+  /** 세션 모드: 다음 국으로 */
+  onNextRound?: () => void;
+  /** 세션 누적 점수 (4명) */
+  sessionScores?: number[];
+  /** 현재 국 번호 (0~3) */
+  currentRound?: number;
+  /** 총 국 수 (동풍전: 4) */
+  maxRounds?: number;
+  /** 세션 종료 여부 */
+  isSessionOver?: boolean;
 }
 
 const SEAT_LABELS = ['나 (東)', 'AI 1 (南)', 'AI 2 (西)', 'AI 3 (北)'];
+const SHORT_LABELS = ['나', 'AI 1', 'AI 2', 'AI 3'];
 
-export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOverModalProps) {
+export default function GameOverModal({
+  state,
+  onRestart,
+  onBackToMenu,
+  onNextRound,
+  sessionScores,
+  currentRound,
+  maxRounds,
+  isSessionOver,
+}: GameOverModalProps) {
   const winner = state.winner;
   const winResult = state.winResult;
   const isPlayerWin = winner === 0;
@@ -34,6 +54,13 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
 
   // 승자 정보
   const winnerPlayer = winner !== null ? state.players[winner] : null;
+
+  // 세션 최종 순위 (isSessionOver일 때)
+  const finalRanking = isSessionOver && sessionScores
+    ? sessionScores
+        .map((score, idx) => ({ idx, score }))
+        .sort((a, b) => b.score - a.score)
+    : null;
 
   // 공유 텍스트
   const handleShare = () => {
@@ -61,6 +88,15 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
         shadow-gold-glow p-4 sm:p-6 max-w-lg w-full mx-3 animate-result-appear
         max-h-[90vh] overflow-y-auto">
 
+        {/* 국 번호 뱃지 */}
+        {currentRound !== undefined && maxRounds && (
+          <div className="text-center mb-2">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">
+              東{currentRound + 1}局 / {maxRounds}국
+            </span>
+          </div>
+        )}
+
         {/* 타이틀 */}
         <h2 className="text-center mb-4 sm:mb-5">
           {isDraw ? (
@@ -87,23 +123,19 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
           <div className="mb-4 sm:mb-5">
             {/* 화료패 표시 */}
             <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-4 flex-wrap">
-              {/* 손패 */}
               {winnerPlayer.hand.map(id => (
                 <TileComponent key={id} tileId={id} size="sm" />
               ))}
-              {/* 쯔모: drawnTile 하이라이트 */}
               {isTsumo && winnerPlayer.drawnTile !== null && (
                 <div className="ml-1.5 sm:ml-2 ring-2 ring-gold rounded-sm">
                   <TileComponent tileId={winnerPlayer.drawnTile} size="sm" />
                 </div>
               )}
-              {/* 론: lastDiscard 하이라이트 */}
               {!isTsumo && state.lastDiscard && (
                 <div className="ml-1.5 sm:ml-2 ring-2 ring-action-danger rounded-sm">
                   <TileComponent tileId={state.lastDiscard.tileId} size="sm" />
                 </div>
               )}
-              {/* 부로 면자 */}
               {winnerPlayer.melds.length > 0 && (
                 <div className="ml-2 sm:ml-3 flex gap-0.5">
                   {winnerPlayer.melds.map((meld, mi) => (
@@ -156,7 +188,6 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
             {settlement && (
               <div className="mb-3">
                 <h3 className="text-xs text-text-muted text-center mb-2">정산</h3>
-                {/* 지불 흐름 */}
                 <div className="space-y-1 mb-2">
                   {settlement.payments.map((p, i) => (
                     <div key={i} className="flex items-center justify-between
@@ -173,7 +204,6 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
                     </div>
                   ))}
                 </div>
-                {/* 각 플레이어 점수 변동 */}
                 <div className="grid grid-cols-4 gap-1">
                   {[0, 1, 2, 3].map(seat => {
                     const delta = settlement.playerDeltas[seat];
@@ -202,15 +232,85 @@ export default function GameOverModal({ state, onRestart, onBackToMenu }: GameOv
           </div>
         )}
 
+        {/* 세션 누적 점수 */}
+        {sessionScores && !isSessionOver && (
+          <div className="mb-4 border-t border-white/5 pt-3">
+            <h3 className="text-xs text-text-muted text-center mb-2">누적 점수</h3>
+            <div className="grid grid-cols-4 gap-1">
+              {sessionScores.map((score, idx) => (
+                <div key={idx} className={`text-center py-1.5 rounded-lg text-[10px] sm:text-xs
+                  ${idx === 0 ? 'bg-gold/10 border border-gold/20' : 'bg-panel border border-white/5'}`}>
+                  <div className="truncate px-1 text-text-muted">{SHORT_LABELS[idx]}</div>
+                  <div className={`font-display font-bold text-sm ${
+                    idx === 0 ? 'text-gold' : 'text-text-secondary'
+                  }`}>
+                    {score.toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 세션 최종 결과 (4국 완료) */}
+        {isSessionOver && finalRanking && (
+          <div className="mb-4 border-t border-gold/20 pt-4">
+            <h3 className="text-sm text-gold text-center mb-3 font-display font-bold">
+              동풍전 최종 결과
+            </h3>
+            <div className="space-y-1.5">
+              {finalRanking.map((entry, rank) => {
+                const isMe = entry.idx === 0;
+                const rankColors = [
+                  'bg-gold/15 border-gold/30 text-gold',
+                  'bg-white/5 border-white/10 text-text-secondary',
+                  'bg-white/5 border-white/5 text-text-muted',
+                  'bg-white/5 border-white/5 text-text-muted',
+                ];
+                return (
+                  <div key={entry.idx}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg border ${rankColors[rank]}
+                      ${isMe ? 'ring-1 ring-gold/30' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-display font-bold text-sm w-5">
+                        {rank + 1}위
+                      </span>
+                      <span className={`text-sm ${isMe ? 'font-semibold' : ''}`}>
+                        {SEAT_LABELS[entry.idx]}
+                      </span>
+                    </div>
+                    <span className="font-display font-bold text-base">
+                      {entry.score.toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* 버튼 */}
         <div className="flex gap-3 justify-center flex-wrap">
+          {/* 다음 국으로 (세션 진행 중일 때) */}
+          {onNextRound && !isSessionOver && (
+            <button
+              onClick={onNextRound}
+              className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer
+                bg-gradient-to-r from-gold-dark via-gold to-gold-light text-text-on-gold
+                hover:shadow-gold-glow active:scale-[0.98] transition-all"
+            >
+              다음 국으로
+            </button>
+          )}
           <button
             onClick={onRestart}
-            className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer
-              bg-gold/20 text-gold border border-gold/30
-              hover:bg-gold/30 transition-colors"
+            className={`px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer transition-colors
+              ${onNextRound && !isSessionOver
+                ? 'bg-panel-light text-text-secondary border border-white/10 hover:border-white/20'
+                : 'bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30'
+              }`}
           >
-            다시하기
+            {isSessionOver ? '새 동풍전' : '처음부터'}
           </button>
           {isPlayerWin && winResult && (
             <button

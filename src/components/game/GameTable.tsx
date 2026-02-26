@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useGameStore } from '@/stores/useGameStore';
+import { useSessionStore } from '@/stores/useSessionStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { TileId, ActionType } from '@/engine/types';
@@ -49,11 +50,18 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   const soundEnabled = useSettingsStore(s => s.soundEnabled);
   const setSoundEnabled = useSettingsStore(s => s.setSoundEnabled);
 
+  // 세션
+  const session = useSessionStore(s => s.session);
+  const recordResult = useSessionStore(s => s.recordResult);
+  const nextRound = useSessionStore(s => s.nextRound);
+  const startSession = useSessionStore(s => s.startSession);
+  const clearSession = useSessionStore(s => s.clearSession);
+  const isSessionOver = useSessionStore(s => s.isOver);
+
   // 액션
   const playerDiscard = useGameStore(s => s.playerDiscard);
   const playerAction = useGameStore(s => s.playerAction);
   const playerSkip = useGameStore(s => s.playerSkip);
-  const initGame = useGameStore(s => s.initGame);
   const getPlayerActions = useGameStore(s => s.getPlayerActions);
   const canPlayerTsumo = useGameStore(s => s.canPlayerTsumo);
   const getPlayerAnkanOptions = useGameStore(s => s.getPlayerAnkanOptions);
@@ -131,6 +139,14 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     setRecorded(true);
   }, [phase, recorded, winner, winResult, difficulty, turnCount]);
 
+  // 세션 결과 기록 (게임 오버 시)
+  const sessionRecordedRef = useRef(false);
+  useEffect(() => {
+    if (phase !== 'game-over' || sessionRecordedRef.current || !session) return;
+    recordResult(useGameStore.getState());
+    sessionRecordedRef.current = true;
+  }, [phase, session, recordResult]);
+
   const myPlayer = players[0];
   const isMyTurn = turnIndex === 0;
 
@@ -183,10 +199,20 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
   const handleRestart = useCallback(() => {
     handleInteraction();
     const { difficulty, beginnerMode } = useGameStore.getState();
-    initGame(difficulty, beginnerMode);
+    clearSession();
+    startSession(difficulty, beginnerMode);
     setSelectedTile(null);
     setRecorded(false);
-  }, [initGame, handleInteraction]);
+    sessionRecordedRef.current = false;
+  }, [clearSession, startSession, handleInteraction]);
+
+  const handleNextRound = useCallback(() => {
+    handleInteraction();
+    nextRound();
+    setSelectedTile(null);
+    setRecorded(false);
+    sessionRecordedRef.current = false;
+  }, [nextRound, handleInteraction]);
 
   if (!myPlayer) return null;
 
@@ -327,6 +353,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
                 turnIndex={turnIndex}
                 wallCount={wallTiles.length}
                 turnCount={turnCount}
+                currentRound={session?.currentRound}
               />
 
               <DiscardPool
@@ -453,7 +480,12 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
         <GameOverModal
           state={useGameStore.getState()}
           onRestart={handleRestart}
-          onBackToMenu={onBackToMenu}
+          onBackToMenu={() => { clearSession(); onBackToMenu(); }}
+          onNextRound={session ? handleNextRound : undefined}
+          sessionScores={session?.scores}
+          currentRound={session ? session.currentRound - 1 : undefined}
+          maxRounds={session?.maxRounds}
+          isSessionOver={isSessionOver()}
         />
       )}
     </div>
