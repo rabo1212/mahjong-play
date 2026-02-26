@@ -21,6 +21,7 @@ import WaitingTiles from '@/components/guide/WaitingTiles';
 import TileRecommend from '@/components/guide/TileRecommend';
 import { getTile } from '@/engine/tiles';
 import { resumeAudio, playTilePlace, playTileDraw, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
+import { addRecord } from '@/lib/history';
 import { supabase } from '@/lib/supabase/client';
 
 interface OnlineGameTableProps {
@@ -126,6 +127,29 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
     prevTurnRef.current = turnIndex;
     prevPhaseRef.current = phase;
   }, [gameState, seatIndex, soundEnabled]);
+
+  // 온라인 전적 로컬 저장 (게임 오버 시 1회)
+  const [onlineRecorded, setOnlineRecorded] = useState(false);
+  useEffect(() => {
+    if (!gameState || gameState.phase !== 'game-over' || onlineRecorded || seatIndex === null) return;
+
+    const isMyWin = gameState.winner === seatIndex;
+    const isDraw = gameState.winner === null;
+    const result = isMyWin ? 'win' : isDraw ? 'draw' : 'lose';
+
+    addRecord({
+      date: new Date().toISOString(),
+      difficulty: 'online',
+      result,
+      score: isMyWin && gameState.winResult
+        ? gameState.winResult.scoring.totalPoints : 0,
+      yakuNames: isMyWin && gameState.winResult
+        ? gameState.winResult.scoring.yakuList.map((y: { yaku: { nameKo: string } }) => y.yaku.nameKo)
+        : [],
+      turns: gameState.turnCount,
+    });
+    setOnlineRecorded(true);
+  }, [gameState, onlineRecorded, seatIndex]);
 
   const handleInteraction = useCallback(() => {
     if (soundEnabled) resumeAudio();

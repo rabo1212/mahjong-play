@@ -56,7 +56,7 @@ export default function Home() {
             className="w-full bg-panel/60 rounded-xl border border-white/5 px-4 sm:px-6 py-3 sm:py-4
               hover:border-white/10 transition-colors cursor-pointer text-left"
           >
-            <div className="text-[10px] text-text-muted text-center mb-2">AI 대전 기록</div>
+            <div className="text-[10px] text-text-muted text-center mb-2">대전 기록</div>
             <div className="flex items-center justify-between gap-4">
               <div className="text-center">
                 <div className="text-xl sm:text-2xl font-display font-bold text-gold">{stats.winRate}%</div>
@@ -101,7 +101,8 @@ export default function Home() {
               {localHistory.length > 0 && (
                 <div className="flex gap-1.5 justify-center mt-2 mb-1">
                   {[{ key: 'all', label: '전체' }, { key: 'easy', label: '쉬움' },
-                    { key: 'normal', label: '보통' }, { key: 'hard', label: '어려움' }].map(f => (
+                    { key: 'normal', label: '보통' }, { key: 'hard', label: '어려움' },
+                    { key: 'online', label: '온라인' }].map(f => (
                     <button key={f.key}
                       onClick={() => setHistoryFilter(f.key)}
                       className={`px-2 py-0.5 rounded-full text-[10px] cursor-pointer transition-colors ${
@@ -140,7 +141,7 @@ export default function Home() {
                         : record.result === 'win'
                           ? 'bg-gold/15 text-gold'
                           : 'bg-action-danger/15 text-action-danger';
-                      const diffLabel = record.difficulty === 'easy' ? '쉬움' : record.difficulty === 'normal' ? '보통' : '어려움';
+                      const diffLabel = record.difficulty === 'easy' ? '쉬움' : record.difficulty === 'normal' ? '보통' : record.difficulty === 'hard' ? '어려움' : '온라인';
 
                       return (
                         <div key={i} className="bg-panel/60 rounded-lg border border-white/5 px-3 py-2">
