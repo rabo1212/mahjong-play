@@ -223,6 +223,12 @@ export default function Home() {
       {/* 네비게이션 링크 */}
       <div className="flex gap-4 mt-4">
         <button
+          onClick={() => router.push('/rules')}
+          className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer"
+        >
+          규칙
+        </button>
+        <button
           onClick={() => router.push('/leaderboard')}
           className="text-xs text-text-muted hover:text-gold transition-colors cursor-pointer"
         >
