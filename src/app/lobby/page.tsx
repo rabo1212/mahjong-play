@@ -271,6 +271,8 @@ export default function LobbyPage() {
     );
   }
 
+  const filteredRooms = filterBeginner ? rooms.filter(r => r.beginnerMode) : rooms;
+
   // 로그인 완료 → 로비
   return (
     <main className="min-h-screen flex flex-col items-center bg-base px-4 py-8">
@@ -470,9 +472,7 @@ export default function LobbyPage() {
           </div>
         </div>
 
-        {(() => {
-          const filteredRooms = filterBeginner ? rooms.filter(r => r.beginnerMode) : rooms;
-          return filteredRooms.length === 0 ? (
+        {filteredRooms.length === 0 ? (
           <div className="bg-panel rounded-xl border border-white/5 p-6 text-center">
             <p className="text-sm text-text-muted">
               {filterBeginner ? '초보자 방이 없습니다.' : '대기 중인 방이 없습니다.'}
@@ -526,8 +526,7 @@ export default function LobbyPage() {
               </button>
             ))}
           </div>
-        );
-        })()}
+        )}
       </div>
 
       {/* 하단 링크 */}

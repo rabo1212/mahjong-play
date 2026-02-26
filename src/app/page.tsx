@@ -245,7 +245,7 @@ export default function Home() {
       {/* 하단 정보 */}
       <div className="mt-4 sm:mt-6 text-center text-[10px] sm:text-xs text-text-muted space-y-1">
         <p>중국식 마작 (국표마작, MCR) · AI 연습 + 온라인 대전</p>
-        <p>4명 플레이 · 144장 · 20가지 역</p>
+        <p>4명 플레이 · 144장 · 25가지 역</p>
       </div>
     </main>
   );

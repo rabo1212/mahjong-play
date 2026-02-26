@@ -41,17 +41,18 @@ function getOpponents(players: HistoryPlayer[], myId: string | null): string {
 
 export default function HistoryPage() {
   const router = useRouter();
-  const { userId, isAuthenticated, isLoading, restoreSession } = useAuthStore();
+  const { userId, isAuthenticated, restoreSession } = useAuthStore();
 
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    restoreSession();
+    restoreSession().finally(() => setSessionChecked(true));
   }, [restoreSession]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!sessionChecked) return;
     if (!isAuthenticated) {
       router.replace('/lobby');
       return;
@@ -71,7 +72,7 @@ export default function HistoryPage() {
         setLoading(false);
       }
     })();
-  }, [isAuthenticated, isLoading, router]);
+  }, [sessionChecked, isAuthenticated, router]);
 
   return (
     <main className="min-h-screen flex flex-col items-center bg-base px-4 py-8">

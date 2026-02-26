@@ -245,6 +245,7 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
           <div className="border-t border-white/5 pt-2">
             <button
               onClick={() => {
+                setShowSettings(false);
                 if (confirm('게임을 종료하고 메인으로 돌아갈까요?')) {
                   onBackToMenu();
                 }
