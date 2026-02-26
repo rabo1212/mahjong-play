@@ -24,7 +24,7 @@ const SIZES = {
   lg: { w: 52, h: 73, mainFont: 28, suitFont: 15, backFont: 22 },
 };
 
-export default function TileComponent({
+export default React.memo(function TileComponent({
   tileId,
   size = 'md',
   faceDown = false,
@@ -43,6 +43,7 @@ export default function TileComponent({
     return (
       <div
         className={`mahjong-tile-back flex-shrink-0 ${className}`}
+        aria-label="뒷면"
         style={{
           width: s.w,
           height: s.h,
@@ -55,6 +56,7 @@ export default function TileComponent({
 
   const tile = getTile(tileId);
   const display = getTileDisplayInfo(tile.kind);
+  const ariaLabel = display.isBlank ? '백' : `${display.mainChar}${display.suitChar}`;
 
   return (
     <div
@@ -65,6 +67,8 @@ export default function TileComponent({
         ${highlighted ? 'ring-2 ring-action-success ring-opacity-60' : ''}
         ${className}
       `}
+      aria-label={ariaLabel}
+      role={interactive ? 'button' : undefined}
       style={{
         width: s.w,
         height: s.h,
@@ -107,4 +111,4 @@ export default function TileComponent({
       )}
     </div>
   );
-}
+});

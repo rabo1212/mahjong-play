@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PendingAction, TileKind } from '@/engine/types';
 import TileComponent from './TileComponent';
 
@@ -40,15 +40,13 @@ export default function ActionButtons({
     if (!hasChi) setShowChiPicker(false);
   }, [hasChi]);
 
-  const handleChiClick = () => {
+  const handleChiClick = useCallback(() => {
     if (chiAllOptions.length <= 1) {
-      // 옵션 1개면 즉시 실행
       onAction('chi', chiAction?.tiles);
     } else {
-      // 옵션 2~3개면 선택 팝업
       setShowChiPicker(true);
     }
-  };
+  }, [chiAllOptions.length, chiAction?.tiles, onAction]);
 
   const handleChiOptionSelect = (tiles: number[]) => {
     setShowChiPicker(false);
@@ -57,6 +55,30 @@ export default function ActionButtons({
 
   const showActionBar = phase === 'action-pending' && playerActions.length > 0;
   const showTsumoBar = phase === 'discard' && isMyTurn && (canTsumo || ankanOptions.length > 0 || kakanOptions.length > 0);
+
+  // 키보드 단축키
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.repeat) return;
+    const key = e.key.toLowerCase();
+
+    if (showActionBar) {
+      if (key === 'c' && hasChi) { handleChiClick(); return; }
+      if (key === 'p' && hasPon) { onAction('pon'); return; }
+      if (key === 'k' && hasKan) { onAction('kan'); return; }
+      if (key === 'w' && hasRon) { onAction('win'); return; }
+      if (key === ' ' || key === 'escape') { e.preventDefault(); onSkip(); return; }
+    }
+    if (showTsumoBar) {
+      if (key === 'w' && canTsumo) { onAction('win'); return; }
+      if (key === 'k' && ankanOptions.length > 0) { onAction('ankan', [ankanOptions[0]]); return; }
+    }
+  }, [showActionBar, showTsumoBar, hasChi, hasPon, hasKan, hasRon, canTsumo, ankanOptions, onAction, onSkip, handleChiClick]);
+
+  useEffect(() => {
+    if (!showActionBar && !showTsumoBar) return;
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown, showActionBar, showTsumoBar]);
 
   if (!showActionBar && !showTsumoBar) return null;
 
@@ -74,6 +96,7 @@ export default function ActionButtons({
                   onClick={handleChiClick}
                 >
                   치 <span className="font-tile text-[17px]">吃</span>
+                  <span className="text-[9px] opacity-40 ml-1">C</span>
                 </button>
               )}
               {hasPon && (
@@ -82,6 +105,7 @@ export default function ActionButtons({
                   onClick={() => onAction('pon')}
                 >
                   펑 <span className="font-tile text-[17px]">碰</span>
+                  <span className="text-[9px] opacity-40 ml-1">P</span>
                 </button>
               )}
               {hasKan && (
@@ -90,6 +114,7 @@ export default function ActionButtons({
                   onClick={() => onAction('kan')}
                 >
                   깡 <span className="font-tile text-[17px]">杠</span>
+                  <span className="text-[9px] opacity-40 ml-1">K</span>
                 </button>
               )}
 
@@ -138,6 +163,7 @@ export default function ActionButtons({
               onClick={() => onAction('win')}
             >
               화료 <span className="font-tile text-[17px]">和</span>
+              <span className="text-[9px] opacity-40 ml-1">W</span>
             </button>
           )}
           <button
@@ -145,6 +171,7 @@ export default function ActionButtons({
             onClick={onSkip}
           >
             패스
+            <span className="text-[9px] opacity-40 ml-1">Space</span>
           </button>
         </>
       )}
@@ -158,15 +185,17 @@ export default function ActionButtons({
               onClick={() => onAction('win')}
             >
               쯔모 <span className="font-tile text-[17px]">自摸</span>
+              <span className="text-[9px] opacity-40 ml-1">W</span>
             </button>
           )}
-          {ankanOptions.map(kind => (
+          {ankanOptions.map((kind, i) => (
             <button
               key={`ankan-${kind}`}
               className="action-btn action-btn-kan"
               onClick={() => onAction('ankan', [kind])}
             >
               암깡 <span className="font-tile text-[17px]">暗杠</span>
+              {i === 0 && <span className="text-[9px] opacity-40 ml-1">K</span>}
             </button>
           ))}
           {kakanOptions.map(idx => (
