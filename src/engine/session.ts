@@ -4,6 +4,7 @@
  */
 import { GameState, Difficulty } from './types';
 import { createInitialGameState, startGame } from './game-manager';
+import { calculateSettlement } from './settlement';
 
 export interface GameSession {
   sessionId: string;
@@ -38,7 +39,7 @@ export function createSession(difficulty: Difficulty, beginnerMode: boolean): Ga
     beginnerMode,
     currentRound: 0,
     maxRounds: 4,
-    scores: [25000, 25000, 25000, 25000],
+    scores: [0, 0, 0, 0],
     roundHistory: [],
   };
 }
@@ -69,13 +70,14 @@ export function recordRoundResult(
 
   const newScores = [...session.scores];
   if (winner !== null) {
-    // 화료: 승자에게 점수 추가 (단순화된 점수 계산)
-    const basePoints = points * 100;
-    newScores[winner] += basePoints;
-    // 다른 3명에서 균등 차감
-    const perPlayer = Math.floor(basePoints / 3);
+    // MCR 정산 규칙 적용
+    const isTsumo = gameState.winResult?.scoring.yakuList
+      .some(y => y.yaku.id === 'self_drawn') ?? false;
+    const fromPlayerId = !isTsumo && gameState.lastDiscard
+      ? gameState.lastDiscard.playerId : undefined;
+    const settlement = calculateSettlement(winner, points, isTsumo, fromPlayerId);
     for (let i = 0; i < 4; i++) {
-      if (i !== winner) newScores[i] -= perPlayer;
+      newScores[i] += settlement.playerDeltas[i];
     }
   }
 

@@ -21,8 +21,8 @@ interface GameOverModalProps {
   isSessionOver?: boolean;
 }
 
-const SEAT_LABELS = ['나 (東)', 'AI 1 (南)', 'AI 2 (西)', 'AI 3 (北)'];
-const SHORT_LABELS = ['나', 'AI 1', 'AI 2', 'AI 3'];
+const WIND_CHARS: Record<number, string> = { 41: '東', 42: '南', 43: '西', 44: '北' };
+const WIND_FALLBACK = ['東', '南', '西', '北'];
 
 export default function GameOverModal({
   state,
@@ -34,6 +34,13 @@ export default function GameOverModal({
   maxRounds,
   isSessionOver,
 }: GameOverModalProps) {
+  // 동적 좌석풍 라벨
+  const getSeatLabel = (idx: number) => {
+    const wind = WIND_CHARS[state.players[idx]?.seatWind] || WIND_FALLBACK[idx];
+    return idx === 0 ? `나 (${wind})` : `AI ${idx} (${wind})`;
+  };
+  const getShortLabel = (idx: number) => idx === 0 ? '나' : `AI ${idx}`;
+
   const winner = state.winner;
   const winResult = state.winResult;
   const isPlayerWin = winner === 0;
@@ -108,7 +115,7 @@ export default function GameOverModal({
             </span>
           ) : (
             <span className="text-2xl sm:text-3xl font-tile text-action-danger">
-              {SEAT_LABELS[winner!]} 화료
+              {getSeatLabel(winner!)} 화료
             </span>
           )}
           {!isDraw && (
@@ -193,13 +200,13 @@ export default function GameOverModal({
                     <div key={i} className="flex items-center justify-between
                       bg-base/40 rounded-lg px-3 py-1.5 text-xs sm:text-sm">
                       <span className="text-action-danger truncate max-w-[30%]">
-                        {SEAT_LABELS[p.from]}
+                        {getSeatLabel(p.from)}
                       </span>
                       <span className="text-text-muted flex-shrink-0 px-1">
                         → {p.amount}점 →
                       </span>
                       <span className="text-green-400 truncate max-w-[30%] text-right">
-                        {SEAT_LABELS[p.to]}
+                        {getSeatLabel(p.to)}
                       </span>
                     </div>
                   ))}
@@ -212,7 +219,7 @@ export default function GameOverModal({
                         ${delta > 0 ? 'bg-green-500/10 text-green-400' :
                           delta < 0 ? 'bg-action-danger/10 text-action-danger' :
                           'bg-panel text-text-muted'}`}>
-                        <div className="truncate px-1">{SEAT_LABELS[seat].split(' ')[0]}</div>
+                        <div className="truncate px-1">{getShortLabel(seat)}</div>
                         <div className="font-display font-bold text-sm">
                           {delta > 0 ? '+' : ''}{delta}
                         </div>
@@ -240,7 +247,7 @@ export default function GameOverModal({
               {sessionScores.map((score, idx) => (
                 <div key={idx} className={`text-center py-1.5 rounded-lg text-[10px] sm:text-xs
                   ${idx === 0 ? 'bg-gold/10 border border-gold/20' : 'bg-panel border border-white/5'}`}>
-                  <div className="truncate px-1 text-text-muted">{SHORT_LABELS[idx]}</div>
+                  <div className="truncate px-1 text-text-muted">{getShortLabel(idx)}</div>
                   <div className={`font-display font-bold text-sm ${
                     idx === 0 ? 'text-gold' : 'text-text-secondary'
                   }`}>
@@ -276,7 +283,7 @@ export default function GameOverModal({
                         {rank + 1}위
                       </span>
                       <span className={`text-sm ${isMe ? 'font-semibold' : ''}`}>
-                        {SEAT_LABELS[entry.idx]}
+                        {getSeatLabel(entry.idx)}
                       </span>
                     </div>
                     <span className="font-display font-bold text-base">
