@@ -129,7 +129,7 @@ export const YAKU_LIST: Record<string, Yaku> = {
     excludes: [],
   },
 
-  // === 4점 ===
+  // === 2점 ===
   prevalent_wind: {
     id: 'prevalent_wind',
     nameKo: '권풍각',

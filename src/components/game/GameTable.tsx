@@ -21,6 +21,8 @@ import ShantenDisplay from '../guide/ShantenDisplay';
 import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 import { addRecord } from '@/lib/history';
 
+const WIND_CHARS: Record<number, string> = { 41: '東', 42: '南', 43: '西', 44: '北' };
+
 interface GameTableProps {
   onBackToMenu: () => void;
 }
@@ -289,20 +291,21 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
       <div className="absolute inset-2 sm:inset-4 md:inset-6 lg:inset-8 rounded-2xl table-bg overflow-hidden">
         {/* 펠트 텍스처: CSS의 .table-bg::before에서 처리 */}
 
-        {/* === 대면 (北, 인덱스 2) === */}
+        {/* === 대면 (인덱스 2) === */}
         <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 sm:gap-2 z-10">
           <div className={`text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full ${
             turnIndex === 2
               ? 'bg-gold/20 text-gold'
               : 'bg-panel/60 text-text-secondary'
           }`}>
-            AI 2 (西)
+            AI 2 ({WIND_CHARS[players[2]?.seatWind] || '西'})
+            {session && <span className="ml-1 text-[9px] opacity-70">{session.scores[2].toLocaleString()}</span>}
           </div>
           <MeldDisplay melds={players[2].melds} position="top" />
           <OpponentHand player={players[2]} position="top" />
         </div>
 
-        {/* === 상가 (西, 인덱스 3) — 왼쪽 === */}
+        {/* === 상가 (인덱스 3) — 왼쪽 === */}
         <div className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2 z-10">
           <div className="flex flex-col items-center gap-1 sm:gap-2">
             <div className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
@@ -310,14 +313,15 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
                 ? 'bg-gold/20 text-gold'
                 : 'bg-panel/60 text-text-secondary'
             }`}>
-              AI 3 (北)
+              AI 3 ({WIND_CHARS[players[3]?.seatWind] || '北'})
+              {session && <span className="ml-1 text-[9px] opacity-70">{session.scores[3].toLocaleString()}</span>}
             </div>
             <MeldDisplay melds={players[3].melds} position="left" />
             <OpponentHand player={players[3]} position="left" />
           </div>
         </div>
 
-        {/* === 하가 (南, 인덱스 1) — 오른쪽 === */}
+        {/* === 하가 (인덱스 1) — 오른쪽 === */}
         <div className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2 z-10">
           <div className="flex flex-col items-center gap-1 sm:gap-2">
             <div className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
@@ -325,7 +329,8 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
                 ? 'bg-gold/20 text-gold'
                 : 'bg-panel/60 text-text-secondary'
             }`}>
-              AI 1 (南)
+              AI 1 ({WIND_CHARS[players[1]?.seatWind] || '南'})
+              {session && <span className="ml-1 text-[9px] opacity-70">{session.scores[1].toLocaleString()}</span>}
             </div>
             <MeldDisplay melds={players[1].melds} position="right" />
             <OpponentHand player={players[1]} position="right" />
@@ -437,7 +442,8 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
                 ? 'bg-gold/20 text-gold border border-gold/30'
                 : 'bg-panel/60 text-text-secondary'
             }`}>
-              나 (東)
+              나 ({WIND_CHARS[players[0]?.seatWind] || '東'})
+              {session && <span className="ml-1 text-[9px] font-display text-gold">{session.scores[0].toLocaleString()}</span>}
             </div>
 
             <PlayerHand
