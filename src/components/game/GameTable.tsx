@@ -18,7 +18,7 @@ import ActionPopup from './ActionPopup';
 import WaitingTiles from '../guide/WaitingTiles';
 import TileRecommend from '../guide/TileRecommend';
 import ShantenDisplay from '../guide/ShantenDisplay';
-import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
+import { resumeAudio, playTilePlace, playTileDraw, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 import { addRecord } from '@/lib/history';
 
 const WIND_CHARS: Record<number, string> = { 41: '東', 42: '南', 43: '西', 44: '北' };
@@ -122,6 +122,17 @@ export default function GameTable({ onBackToMenu }: GameTableProps) {
     prevTurnRef.current = turnIndex;
     prevPhaseRef.current = phase;
   }, [phase, turnIndex, soundEnabled, winner]);
+
+  // 효과음: 패 뽑기 (내 drawnTile 변화 감지)
+  const myDrawnTile = players[0]?.drawnTile ?? null;
+  const prevDrawnRef = useRef(myDrawnTile);
+  useEffect(() => {
+    if (!soundEnabled) { prevDrawnRef.current = myDrawnTile; return; }
+    if (myDrawnTile !== null && prevDrawnRef.current !== myDrawnTile) {
+      playTileDraw();
+    }
+    prevDrawnRef.current = myDrawnTile;
+  }, [myDrawnTile, soundEnabled]);
 
   // 전적 기록 (게임 오버 시 1회)
   useEffect(() => {

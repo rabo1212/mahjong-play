@@ -20,7 +20,7 @@ import ShantenDisplay from '@/components/guide/ShantenDisplay';
 import WaitingTiles from '@/components/guide/WaitingTiles';
 import TileRecommend from '@/components/guide/TileRecommend';
 import { getTile } from '@/engine/tiles';
-import { resumeAudio, playTilePlace, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
+import { resumeAudio, playTilePlace, playTileDraw, playCall, playWin, playDraw, playClick, playTurnChange } from '@/lib/sound';
 import { supabase } from '@/lib/supabase/client';
 
 interface OnlineGameTableProps {
@@ -62,6 +62,17 @@ export default function OnlineGameTable({ roomId, roomCode, onBackToMenu }: Onli
   const setSoundEnabled = useSettingsStore(s => s.setSoundEnabled);
   const showHints = useSettingsStore(s => s.showHints);
   const setShowHints = useSettingsStore(s => s.setShowHints);
+
+  // 효과음: 패 뽑기 (내 drawnTile 변화 감지)
+  const myDrawnTile = gameState?.players[(seatIndex ?? 0)]?.drawnTile ?? null;
+  const prevDrawnRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!soundEnabled || !gameState) { prevDrawnRef.current = myDrawnTile; return; }
+    if (myDrawnTile !== null && prevDrawnRef.current !== myDrawnTile) {
+      playTileDraw();
+    }
+    prevDrawnRef.current = myDrawnTile;
+  }, [myDrawnTile, soundEnabled, gameState]);
 
   // 이전 턴 추적 (효과음용)
   const prevTurnRef = useRef<number | null>(null);

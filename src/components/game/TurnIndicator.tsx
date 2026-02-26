@@ -47,6 +47,7 @@ export default function TurnIndicator({
   onTimeout,
 }: TurnIndicatorProps) {
   const progress = Math.max(0, Math.min(100, (wallCount / INITIAL_WALL) * 100));
+  const isWallCritical = wallCount <= 10;
 
   // 국번호 라벨 (東1局~東4局)
   const windChar = WIND_CHARS[roundWind] || '東';
@@ -85,9 +86,9 @@ export default function TurnIndicator({
   const isUrgent = remaining !== null && remaining <= 5;
 
   return (
-    <div className="table-center w-[72px] h-[72px] sm:w-[100px] sm:h-[100px] rounded-lg flex flex-col items-center justify-center
+    <div className={`table-center w-[72px] h-[72px] sm:w-[100px] sm:h-[100px] rounded-lg flex flex-col items-center justify-center
       bg-gradient-to-br from-[#0D3B20] to-[#0A2816]
-      border border-gold/20 shadow-panel select-none">
+      border ${isWallCritical ? 'border-action-danger/40' : 'border-gold/20'} shadow-panel select-none`}>
 
       {/* 상 (대면) */}
       <SeatLabel idx={2} turnIndex={turnIndex} />
@@ -110,7 +111,9 @@ export default function TurnIndicator({
               {roundLabel}
             </span>
           )}
-          <span className="text-[9px] sm:text-[10px] font-display text-text-secondary tabular-nums">
+          <span className={`text-[9px] sm:text-[10px] font-display tabular-nums ${
+            !remaining && isWallCritical ? 'text-action-danger animate-pulse font-bold' : 'text-text-secondary'
+          }`}>
             {remaining !== null ? roundLabel : wallCount}
           </span>
         </div>
